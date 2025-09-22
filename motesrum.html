@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Mötesrum Status</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; }
+    .status { font-size: 4em; font-weight: bold; margin-top: 50px; }
+    .ledigt { color: green; }
+    .upptaget { color: red; }
+    .meeting-info { margin-top: 20px; font-size: 1.5em; }
+  </style>
+</head>
+<body>
+  <h1>Mötesrum – Västberga</h1>
+  <div id="status" class="status">Laddar...</div>
+  <div class="meeting-info">
+    <p id="nextMeeting"></p>
+    <p id="timeRange"></p>
+  </div>
+
+  <script>
+    async function loadStatus() {
+      try {
+        // Här kan du ersätta med ett API från Power Automate eller SharePoint
+        const response = await fetch("status.json"); 
+        const data = await response.json();
+
+        const statusEl = document.getElementById("status");
+        const nextMeetingEl = document.getElementById("nextMeeting");
+        const timeRangeEl = document.getElementById("timeRange");
+
+        if (data.Status === "Upptaget") {
+          statusEl.textContent = "Upptaget";
+          statusEl.className = "status upptaget";
+          nextMeetingEl.textContent = "Möte: " + data.NextMeeting;
+          timeRangeEl.textContent = data.StartTime + " - " + data.EndTime;
+        } else {
+          statusEl.textContent = "Ledigt";
+          statusEl.className = "status ledigt";
+          nextMeetingEl.textContent = "";
+          timeRangeEl.textContent = "";
+        }
+      } catch (err) {
+        document.getElementById("status").textContent = "Fel vid laddning";
+      }
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 60000); // Uppdatera varje minut
+  </script>
+</body>
+</html>
