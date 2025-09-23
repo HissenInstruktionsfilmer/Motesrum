@@ -10,6 +10,8 @@ body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; 
 .upptaget { color: red; }
 .meeting-info { margin-top: 20px; font-size: 1.2em; }
 .meeting-info p { margin: 5px 0; }
+a { color: blue; text-decoration: none; }
+a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -22,6 +24,7 @@ body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; 
   <p id="attendees"></p>
   <p id="location"></p>
   <p id="description"></p>
+  <p id="teamsLink"></p>
 </div>
 
 <script>
@@ -32,11 +35,11 @@ async function updateStatus() {
     const attendeesEl = document.getElementById("attendees");
     const locationEl = document.getElementById("location");
     const descEl = document.getElementById("description");
+    const teamsEl = document.getElementById("teamsLink");
 
     try {
         const res = await fetch('https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus');
         const data = await res.json();
-
         const meeting = data.nextMeeting;
         const now = new Date();
 
@@ -56,25 +59,30 @@ async function updateStatus() {
                 (meeting.attendees ? meeting.attendees.map(a => a.emailAddress.name).join(", ") : "-");
             locationEl.textContent = "Plats: " + (meeting.location.displayName || "-");
             descEl.textContent = "Beskrivning: " + (meeting.bodyPreview || "-");
+            teamsEl.innerHTML = meeting.onlineMeeting?.joinUrl 
+                ? `<a href="${meeting.onlineMeeting.joinUrl}" target="_blank">Gå med i Teams</a>` 
+                : "";
         } else {
             nextEl.textContent = "";
             timeEl.textContent = "";
             attendeesEl.textContent = "";
             locationEl.textContent = "";
             descEl.textContent = "";
+            teamsEl.innerHTML = "";
         }
     } catch (err) {
-        console.error("Error fetching meeting:", err);
+        console.error("Fel vid hämtning av möte:", err);
         statusEl.textContent = "Fel vid laddning";
         nextEl.textContent = "";
         timeEl.textContent = "";
         attendeesEl.textContent = "";
         locationEl.textContent = "";
         descEl.textContent = "";
+        teamsEl.innerHTML = "";
     }
 }
 
-// Uppdatera vid laddning och var 60:e sekund
+// Kör vid laddning och uppdatera varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
