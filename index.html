@@ -22,7 +22,7 @@
   <script>
     async function loadStatus() {
       try {
-        // Här kan du ersätta med ett API från Power Automate eller SharePoint
+        https://fmcadmin.sharepoint.com/_api/web/lists/getbytitle('Vstberga Mtesrum')/items
         const response = await fetch("status.json"); 
         const data = await response.json();
 
