@@ -1,56 +1,99 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <title>Mötesrum Status</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; }
-    .status { font-size: 4em; font-weight: bold; margin-top: 50px; }
-    .ledigt { color: green; }
-    .upptaget { color: red; }
-    .meeting-info { margin-top: 20px; font-size: 1.5em; }
-  </style>
+<meta charset="UTF-8">
+<title>Mötesrum Status – Västberga</title>
+<style>
+body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; }
+.status { font-size: 4em; font-weight: bold; margin-top: 50px; }
+.ledigt { color: green; }
+.upptaget { color: red; }
+.meeting-info { margin-top: 20px; font-size: 1.5em; }
+button { margin-top: 20px; font-size: 1em; padding: 10px 20px; }
+</style>
+<script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>
 </head>
 <body>
-  <h1>Mötesrum – Västberga</h1>
-  <div id="status" class="status">Laddar...</div>
-  <div class="meeting-info">
-    <p id="nextMeeting"></p>
-    <p id="timeRange"></p>
-  </div>
 
-  <script>
-    function loadStatus() {
-      fetch("https://fmcadmin.sharepoint.com/_api/web/lists/getbytitle('Vstberga Mtesrum')/items?$top=1&$orderby=Id asc", {
-        headers: { "Accept": "application/json;odata=nometadata" },
-        credentials: "include" // viktigt så att din M365-inloggning följer med
-      })
-      .then(response => response.json())
-      .then(data => {
-        const item = data.value[0]; // hämtar första raden i listan
-        const statusEl = document.getElementById("status");
-        const nextMeetingEl = document.getElementById("nextMeeting");
-        const timeRangeEl = document.getElementById("timeRange");
+<h1>Mötesrum – Västberga</h1>
+<div id="status" class="status">Laddar...</div>
+<div class="meeting-info">
+  <p id="nextMeeting"></p>
+  <p id="timeRange"></p>
+</div>
+<button id="loginBtn">Logga in</button>
 
-        if (item.Status === "Upptaget") {
-          statusEl.textContent = "Upptaget";
-          statusEl.className = "status upptaget";
-          nextMeetingEl.textContent = "Möte: " + item.NextMeeting;
-          timeRangeEl.textContent = item.StartTime + " - " + item.EndTime;
-        } else {
-          statusEl.textContent = "Ledigt";
-          statusEl.className = "status ledigt";
-          nextMeetingEl.textContent = "";
-          timeRangeEl.textContent = "";
-        }
-      })
-      .catch(err => {
-        document.getElementById("status").textContent = "Fel vid laddning";
-      });
+<script>
+// Konfiguration för MSAL
+const msalConfig = {
+    auth: {
+        clientId: "8f7de8d8-3a32-4644-a72d-0fe21aeb17d8", // Program-ID (klient)
+        authority: "https://login.microsoftonline.com/71da2db2-6e18-47a5-906c-3616b41dfe45", // Katalog-ID
+        redirectUri: "https://hisseninstruktionsfilmer.github.io/Motesrum/" // GitHub Pages URL
+    }
+};
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+// Hämta token för Graph API
+async function getToken() {
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length === 0) return null;
+    const response = await msalInstance.acquireTokenSilent({
+        scopes: ["Calendars.Read"],
+        account: accounts[0]
+    });
+    return response.accessToken;
+}
+
+// Hämta nästa möte från kalendern
+async function getNextMeeting() {
+    const token = await getToken();
+    if (!token) return null;
+
+    const now = new Date().toISOString();
+    const end = new Date(Date.now() + 24*60*60*1000).toISOString(); // 24h framåt
+    const url = `https://graph.microsoft.com/v1.0/users/motesrumtest@hissen.se/calendarview?startdatetime=${now}&enddatetime=${end}&$orderby=start/dateTime&$top=1`;
+
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    return data.value[0] || null;
+}
+
+// Uppdatera rumsstatus
+async function updateStatus() {
+    const meeting = await getNextMeeting();
+    const statusEl = document.getElementById("status");
+    const nextEl = document.getElementById("nextMeeting");
+    const timeEl = document.getElementById("timeRange");
+    const now = new Date();
+
+    if (meeting && new Date(meeting.start.dateTime) <= now && now <= new Date(meeting.end.dateTime)) {
+        statusEl.textContent = "Upptaget";
+        statusEl.className = "status upptaget";
+    } else {
+        statusEl.textContent = "Ledigt";
+        statusEl.className = "status ledigt";
     }
 
-    loadStatus();
-    setInterval(loadStatus, 60000); // Uppdatera varje minut
-  </script>
+    if (meeting) {
+        nextEl.textContent = "Nästa möte: " + meeting.subject;
+        timeEl.textContent = new Date(meeting.start.dateTime).toLocaleTimeString() + " - " +
+                           new Date(meeting.end.dateTime).toLocaleTimeString();
+    } else {
+        nextEl.textContent = "";
+        timeEl.textContent = "";
+    }
+}
+
+// Login-knapp
+document.getElementById("loginBtn").onclick = async () => {
+    await msalInstance.loginPopup({ scopes: ["Calendars.Read"] });
+    document.getElementById("loginBtn").style.display = "none";
+    updateStatus();
+    setInterval(updateStatus, 60000); // uppdatera varje minut
+};
+</script>
+
 </body>
 </html>
