@@ -24,43 +24,54 @@ button { margin-top: 20px; font-size: 1em; padding: 10px 20px; }
 <button id="loginBtn">Logga in</button>
 
 <script>
-// Konfiguration för MSAL
+// MSAL-konfiguration
 const msalConfig = {
     auth: {
-        clientId: "8f7de8d8-3a32-4644-a72d-0fe21aeb17d8", // Program-ID (klient)
-        authority: "https://login.microsoftonline.com/71da2db2-6e18-47a5-906c-3616b41dfe45", // Katalog-ID
-        redirectUri: "https://hisseninstruktionsfilmer.github.io/Motesrum/" // GitHub Pages URL
+        clientId: "d8fa5025-7e26-4913-956d-344d120c1774",
+        authority: "https://login.microsoftonline.com/71da2db2-6e18-47a5-906c-3616b41dfe45",
+        redirectUri: "https://hisseninstruktionsfilmer.github.io/Motesrum/"
     }
 };
 
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
-// Hämta token för Graph API
+// Hämta token
 async function getToken() {
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length === 0) return null;
-    const response = await msalInstance.acquireTokenSilent({
-        scopes: ["Calendars.Read"],
-        account: accounts[0]
-    });
-    return response.accessToken;
+    try {
+        const response = await msalInstance.acquireTokenSilent({
+            scopes: ["Calendars.Read"],
+            account: accounts[0]
+        });
+        return response.accessToken;
+    } catch (err) {
+        console.error("Token error:", err);
+        return null;
+    }
 }
 
-// Hämta nästa möte från kalendern
+// Hämta nästa möte
 async function getNextMeeting() {
     const token = await getToken();
     if (!token) return null;
 
     const now = new Date().toISOString();
-    const end = new Date(Date.now() + 24*60*60*1000).toISOString(); // 24h framåt
+    const end = new Date(Date.now() + 7*24*60*60*1000).toISOString(); // 7 dagar framåt
     const url = `https://graph.microsoft.com/v1.0/users/motesrumtest@hissen.se/calendarview?startdatetime=${now}&enddatetime=${end}&$orderby=start/dateTime&$top=1`;
 
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    return data.value[0] || null;
+    try {
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        console.log("Graph data:", data);
+        return data.value && data.value.length > 0 ? data.value[0] : null;
+    } catch (err) {
+        console.error("Graph fetch error:", err);
+        return null;
+    }
 }
 
-// Uppdatera rumsstatus
+// Uppdatera status
 async function updateStatus() {
     const meeting = await getNextMeeting();
     const statusEl = document.getElementById("status");
@@ -88,11 +99,22 @@ async function updateStatus() {
 
 // Login-knapp
 document.getElementById("loginBtn").onclick = async () => {
-    await msalInstance.loginPopup({ scopes: ["Calendars.Read"] });
+    try {
+        await msalInstance.loginPopup({ scopes: ["Calendars.Read"] });
+        document.getElementById("loginBtn").style.display = "none";
+        updateStatus();
+        setInterval(updateStatus, 60000); // uppdatera varje minut
+    } catch (err) {
+        console.error("Login error:", err);
+    }
+};
+
+// Auto-hide login-knapp om redan inloggad
+if (msalInstance.getAllAccounts().length > 0) {
     document.getElementById("loginBtn").style.display = "none";
     updateStatus();
-    setInterval(updateStatus, 60000); // uppdatera varje minut
-};
+    setInterval(updateStatus, 60000);
+}
 </script>
 
 </body>
