@@ -28,6 +28,7 @@ async function updateStatus() {
     const nextEl = document.getElementById("nextMeeting");
     const timeEl = document.getElementById("timeRange");
     const attendeesEl = document.getElementById("attendees");
+    const descEl = document.getElementById("description"); // Lägg till detta
 
     try {
         const res = await fetch('https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus');
@@ -60,11 +61,12 @@ async function updateStatus() {
                 .join(", ") || "-";
             attendeesEl.textContent = "Deltagare: " + attendees;
 
-            descEl.textContent = meetingToShow.bodyPreview || "-";
+            descEl.textContent = meetingToShow.bodyPreview || "-"; // Nu funkar detta
         } else {
             nextEl.textContent = "";
             timeEl.textContent = "";
             attendeesEl.textContent = "";
+            descEl.textContent = "";
         }
 
     } catch (err) {
@@ -73,6 +75,7 @@ async function updateStatus() {
         nextEl.textContent = "";
         timeEl.textContent = "";
         attendeesEl.textContent = "";
+        descEl.textContent = "";
     }
 }
 
