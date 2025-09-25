@@ -36,32 +36,32 @@ async function updateStatus() {
         const data = await res.json();
 
         const meeting = data.nextMeeting;
-        const now = new Date();
-
-        if (meeting && new Date(meeting.start.dateTime) <= now && now <= new Date(meeting.end.dateTime)) {
-            statusEl.textContent = "Upptaget";
-            statusEl.className = "status upptaget";
-        } else {
-            statusEl.textContent = "Ledigt";
-            statusEl.className = "status ledigt";
-        }
 
         if (meeting) {
             // Konvertera UTC-tid till svensk lokal tid (CEST/UTC+2)
             const startTime = new Date(meeting.start.dateTime);
             const endTime = new Date(meeting.end.dateTime);
-
-            // Lägg till 2 timmar manuellt om Date.toLocaleTimeString inte funkar korrekt
             startTime.setHours(startTime.getHours() + 2);
             endTime.setHours(endTime.getHours() + 2);
 
+            const now = new Date();
+            // Jämför mot lokal tid istället för ursprunglig UTC
+            if (startTime <= now && now <= endTime) {
+                statusEl.textContent = "Upptaget";
+                statusEl.className = "status upptaget";
+            } else {
+                statusEl.textContent = "Ledigt";
+                statusEl.className = "status ledigt";
+            }
+
+            // Visa tider
             const options = { hour: '2-digit', minute: '2-digit' };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
 
             nextEl.textContent = "Nästa möte: " + meeting.subject;
 
-            // Deltagare: visa "Mötesrum Test" istället för motesrumtest@hissen.se
+            // Deltagare: ersätt motesrumtest@hissen.se med "Mötesrum Test"
             const attendees = (meeting.attendees || []).map(a => {
                 if (a.emailAddress.address.toLowerCase() === 'motesrumtest@hissen.se') {
                     return "Mötesrum Test";
@@ -70,9 +70,10 @@ async function updateStatus() {
             }).join(", ") || "-";
 
             attendeesEl.textContent = "Deltagare: " + attendees;
-
             descEl.textContent = "Beskrivning: " + (meeting.bodyPreview || "-");
+
         } else {
+            statusEl.textContent = "Ledigt";
             nextEl.textContent = "";
             timeEl.textContent = "";
             attendeesEl.textContent = "";
