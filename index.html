@@ -47,29 +47,30 @@ async function updateStatus() {
         }
 
         if (meeting) {
-            // Konvertera tiden till svensk tid (UTC+2 under sommartid, UTC+1 vintertid)
-            const startUtc = new Date(meeting.start.dateTime);
-            const endUtc = new Date(meeting.end.dateTime);
-        
-            // Skapa svenska datumobjekt
-            const startTime = new Date(startUtc.toLocaleString("sv-SE", { timeZone: "Europe/Stockholm" }));
-            const endTime = new Date(endUtc.toLocaleString("sv-SE", { timeZone: "Europe/Stockholm" }));
-        
-            const options = { hour: '2-digit', minute: '2-digit', hour12: false };
+            // Konvertera UTC-tid till svensk lokal tid (CEST/UTC+2)
+            const startTime = new Date(meeting.start.dateTime);
+            const endTime = new Date(meeting.end.dateTime);
+
+            // Lägg till 2 timmar manuellt om Date.toLocaleTimeString inte funkar korrekt
+            startTime.setHours(startTime.getHours() + 2);
+            endTime.setHours(endTime.getHours() + 2);
+
+            const options = { hour: '2-digit', minute: '2-digit' };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
-        }
 
             nextEl.textContent = "Nästa möte: " + meeting.subject;
 
-            // Filtrera bort mötesrummet som deltagare
-            const attendees = (meeting.attendees || [])
-                .filter(a => a.emailAddress.name.toLowerCase() !== 'Mötesrum test')
-                .map(a => a.emailAddress.name)
-                .join(", ") || "-";
+            // Deltagare: visa "Mötesrum Test" istället för motesrumtest@hissen.se
+            const attendees = (meeting.attendees || []).map(a => {
+                if (a.emailAddress.address.toLowerCase() === 'motesrumtest@hissen.se') {
+                    return "Mötesrum Test";
+                }
+                return a.emailAddress.name;
+            }).join(", ") || "-";
+
             attendeesEl.textContent = "Deltagare: " + attendees;
 
-            // Ta bort platsen
             descEl.textContent = "Beskrivning: " + (meeting.bodyPreview || "-");
         } else {
             nextEl.textContent = "";
@@ -77,6 +78,7 @@ async function updateStatus() {
             attendeesEl.textContent = "";
             descEl.textContent = "";
         }
+
     } catch (err) {
         console.error("Fel vid hämtning av möte:", err);
         statusEl.textContent = "Fel vid laddning";
