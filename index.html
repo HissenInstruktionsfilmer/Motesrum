@@ -35,9 +35,8 @@ async function updateStatus() {
 
         const current = data.currentMeeting;
         const nextM = data.nextMeeting;
-        const now = new Date();
+        let meetingToShow = current || nextM; // Visa pågående möte om det finns
 
-        // Status baserat på pågående möte
         if (current) {
             statusEl.textContent = "Upptaget";
             statusEl.className = "status upptaget";
@@ -46,26 +45,28 @@ async function updateStatus() {
             statusEl.className = "status ledigt";
         }
 
-        // Visa nästa möte
-        if (nextM) {
-            const startTime = new Date(nextM.start.dateTime);
-            const endTime = new Date(nextM.end.dateTime);
+        if (meetingToShow) {
+            const startTime = new Date(meetingToShow.start.dateTime);
+            const endTime = new Date(meetingToShow.end.dateTime);
             const options = { hour: '2-digit', minute: '2-digit' };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
 
-            nextEl.textContent = "Nästa möte: " + nextM.subject;
+            nextEl.textContent = (current ? "Pågående möte: " : "Nästa möte: ") + meetingToShow.subject;
 
-            // Deltagare
-            const attendees = (nextM.attendees || []).map(a => a.emailAddress.name).join(", ") || "-";
+            const attendees = (meetingToShow.attendees || [])
+                .filter(a => a.emailAddress.name !== 'Mötesrum Test')
+                .map(a => a.emailAddress.name)
+                .join(", ") || "-";
             attendeesEl.textContent = "Deltagare: " + attendees;
 
+            descEl.textContent = meetingToShow.bodyPreview || "-";
         } else {
             nextEl.textContent = "";
             timeEl.textContent = "";
             attendeesEl.textContent = "";
-            descEl.textContent = "";
         }
+
     } catch (err) {
         console.error("Fel vid hämtning av möte:", err);
         statusEl.textContent = "Fel vid laddning";
