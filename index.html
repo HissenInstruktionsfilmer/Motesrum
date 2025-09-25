@@ -20,6 +20,7 @@ body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; 
   <p id="nextMeeting"></p>
   <p id="timeRange"></p>
   <p id="attendees"></p>
+  <p id="description"></p>
 </div>
 
 <script>
@@ -28,61 +29,57 @@ async function updateStatus() {
     const nextEl = document.getElementById("nextMeeting");
     const timeEl = document.getElementById("timeRange");
     const attendeesEl = document.getElementById("attendees");
+    const descEl = document.getElementById("description");
 
     try {
         const res = await fetch('https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus');
         const data = await res.json();
 
-        const meeting = data.nextMeeting;
+        const current = data.currentMeeting;
+        const nextM = data.nextMeeting;
+        const now = new Date();
 
-        if (meeting) {
-            // Konvertera UTC-tid till svensk lokal tid
-            const startTime = new Date(meeting.start.dateTime);
-            const endTime = new Date(meeting.end.dateTime);
-            startTime.setHours(startTime.getHours() + 2);
-            endTime.setHours(endTime.getHours() + 2);
+        // Status baserat på pågående möte
+        if (current) {
+            statusEl.textContent = "Upptaget";
+            statusEl.className = "status upptaget";
+        } else {
+            statusEl.textContent = "Ledigt";
+            statusEl.className = "status ledigt";
+        }
 
-            const now = new Date();
-            if (startTime <= now && now <= endTime) {
-                statusEl.textContent = "Upptaget";
-                statusEl.className = "status upptaget";
-            } else {
-                statusEl.textContent = "Ledigt";
-                statusEl.className = "status ledigt";
-            }
-
+        // Visa nästa möte
+        if (nextM) {
+            const startTime = new Date(nextM.start.dateTime);
+            const endTime = new Date(nextM.end.dateTime);
             const options = { hour: '2-digit', minute: '2-digit' };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
 
-            nextEl.textContent = "Nästa möte: " + meeting.subject;
+            nextEl.textContent = "Nästa möte: " + nextM.subject;
 
-            // Filtrera bort deltagaren "Mötesrum Test" via namn
-            const attendees = (meeting.attendees || [])
-                .filter(a => a.emailAddress.name !== 'Mötesrum Test')
-                .map(a => a.emailAddress.name)
-                .join(", ") || "-";
-
+            // Deltagare
+            const attendees = (nextM.attendees || []).map(a => a.emailAddress.name).join(", ") || "-";
             attendeesEl.textContent = "Deltagare: " + attendees;
 
-            // Ta bort OnlineMeeting-länken (ingen rendering av joinUrl)
+            // Beskrivning
+            descEl.textContent = nextM.bodyPreview || "-";
         } else {
-            statusEl.textContent = "Ledigt";
             nextEl.textContent = "";
             timeEl.textContent = "";
             attendeesEl.textContent = "";
+            descEl.textContent = "";
         }
-
     } catch (err) {
         console.error("Fel vid hämtning av möte:", err);
         statusEl.textContent = "Fel vid laddning";
         nextEl.textContent = "";
         timeEl.textContent = "";
         attendeesEl.textContent = "";
+        descEl.textContent = "";
     }
 }
 
-// Starta uppdatering och uppdatera varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
