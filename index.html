@@ -38,14 +38,13 @@ async function updateStatus() {
         const meeting = data.nextMeeting;
 
         if (meeting) {
-            // Konvertera UTC-tid till svensk lokal tid (CEST/UTC+2)
+            // Konvertera UTC-tid till svensk lokal tid
             const startTime = new Date(meeting.start.dateTime);
             const endTime = new Date(meeting.end.dateTime);
             startTime.setHours(startTime.getHours() + 2);
             endTime.setHours(endTime.getHours() + 2);
 
             const now = new Date();
-            // Jämför mot lokal tid istället för ursprunglig UTC
             if (startTime <= now && now <= endTime) {
                 statusEl.textContent = "Upptaget";
                 statusEl.className = "status upptaget";
@@ -54,24 +53,22 @@ async function updateStatus() {
                 statusEl.className = "status ledigt";
             }
 
-            // Visa tider
             const options = { hour: '2-digit', minute: '2-digit' };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
 
             nextEl.textContent = "Nästa möte: " + meeting.subject;
 
-            // Deltagare: ersätt motesrumtest@hissen.se med "Mötesrum Test"
-            const attendees = (meeting.attendees || []).map(a => {
-                if (a.emailAddress.address.toLowerCase() === 'motesrumtest@hissen.se') {
-                    return "Mötesrum Test";
-                }
-                return a.emailAddress.name;
-            }).join(", ") || "-";
+            // Filtrera bort deltagaren "Mötesrum Test" via namn
+            const attendees = (meeting.attendees || [])
+                .filter(a => a.emailAddress.name !== 'Mötesrum Test')
+                .map(a => a.emailAddress.name)
+                .join(", ") || "-";
 
             attendeesEl.textContent = "Deltagare: " + attendees;
             descEl.textContent = "Beskrivning: " + (meeting.bodyPreview || "-");
 
+            // Ta bort OnlineMeeting-länken (ingen rendering av joinUrl)
         } else {
             statusEl.textContent = "Ledigt";
             nextEl.textContent = "";
