@@ -47,18 +47,24 @@ async function updateStatus() {
         }
 
         if (meeting) {
-            // Konvertera UTC-tid till svensk lokal tid
-            const startTime = new Date(meeting.start.dateTime);
-            const endTime = new Date(meeting.end.dateTime);
-            const options = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm', hour12: false };
+            // Konvertera tiden till svensk tid (UTC+2 under sommartid, UTC+1 vintertid)
+            const startUtc = new Date(meeting.start.dateTime);
+            const endUtc = new Date(meeting.end.dateTime);
+        
+            // Skapa svenska datumobjekt
+            const startTime = new Date(startUtc.toLocaleString("sv-SE", { timeZone: "Europe/Stockholm" }));
+            const endTime = new Date(endUtc.toLocaleString("sv-SE", { timeZone: "Europe/Stockholm" }));
+        
+            const options = { hour: '2-digit', minute: '2-digit', hour12: false };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
+        }
 
             nextEl.textContent = "Nästa möte: " + meeting.subject;
 
             // Filtrera bort mötesrummet som deltagare
             const attendees = (meeting.attendees || [])
-                .filter(a => a.emailAddress.address.toLowerCase() !== 'motesrumtest@hissen.se')
+                .filter(a => a.emailAddress.name.toLowerCase() !== 'Mötesrum test')
                 .map(a => a.emailAddress.name)
                 .join(", ") || "-";
             attendeesEl.textContent = "Deltagare: " + attendees;
