@@ -47,21 +47,23 @@ async function updateStatus() {
         }
 
         if (meeting) {
+            // Konvertera UTC-tid till svensk lokal tid
             const startTime = new Date(meeting.start.dateTime);
             const endTime = new Date(meeting.end.dateTime);
             const options = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm', hour12: false };
             timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
                                  endTime.toLocaleTimeString('sv-SE', options);
-        }
 
             nextEl.textContent = "Nästa möte: " + meeting.subject;
 
-          const attendees = (meeting.attendees || [])
-                .filter(a => a.emailAddress?.address.toLowerCase() !== 'motesrumtest@hissen.se')
-                .map(a => a.emailAddress?.name)
+            // Filtrera bort mötesrummet som deltagare
+            const attendees = (meeting.attendees || [])
+                .filter(a => a.emailAddress.address.toLowerCase() !== 'motesrumtest@hissen.se')
+                .map(a => a.emailAddress.name)
                 .join(", ") || "-";
             attendeesEl.textContent = "Deltagare: " + attendees;
 
+            // Ta bort platsen
             descEl.textContent = "Beskrivning: " + (meeting.bodyPreview || "-");
         } else {
             nextEl.textContent = "";
@@ -79,6 +81,7 @@ async function updateStatus() {
     }
 }
 
+// Starta uppdatering och uppdatera varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
