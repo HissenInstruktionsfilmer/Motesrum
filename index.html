@@ -8,70 +8,56 @@ body { font-family: Arial, sans-serif; text-align: center; background: #f5f5f5; 
 .status { font-size: 4em; font-weight: bold; margin-top: 50px; }
 .ledigt { color: green; }
 .upptaget { color: red; }
-.meeting-info { margin-top: 20px; font-size: 1.2em; }
-.meeting-info p { margin: 5px 0; }
+.meeting-list { margin-top: 20px; font-size: 1.2em; list-style: none; padding: 0; }
+.meeting-list li { margin: 10px 0; }
 </style>
 </head>
 <body>
 
 <h1>Mötesrum – Västberga</h1>
 <div id="status" class="status">Laddar...</div>
-<div class="meeting-info">
-  <p id="nextMeeting"></p>
-  <p id="timeRange"></p>
-  <p id="attendees"></p>
-</div>
+<ul id="meetingList" class="meeting-list"></ul>
 
 <script>
 async function updateStatus() {
     const statusEl = document.getElementById("status");
-    const nextEl = document.getElementById("nextMeeting");
-    const timeEl = document.getElementById("timeRange");
-    const attendeesEl = document.getElementById("attendees");
+    const meetingListEl = document.getElementById("meetingList");
 
     try {
         const res = await fetch('https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus');
         const data = await res.json();
 
-        const current = data.currentMeeting;
-        const nextM = data.nextMeeting;
-        let meetingToShow = current || nextM; // Visa pågående möte om det finns
+        const now = new Date();
+        const meetings = data.meetings || [];
 
-        if (current) {
-            statusEl.textContent = "Upptaget";
-            statusEl.className = "status upptaget";
-        } else {
-            statusEl.textContent = "Ledigt";
-            statusEl.className = "status ledigt";
-        }
+        // Kontrollera om pågående möte finns
+        const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
+        statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
+        statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
-        if (meetingToShow) {
-            const startTime = new Date(meetingToShow.start.dateTime);
-            const endTime = new Date(meetingToShow.end.dateTime);
-            const options = { hour: '2-digit', minute: '2-digit' };
-            timeEl.textContent = startTime.toLocaleTimeString('sv-SE', options) + " - " +
-                                 endTime.toLocaleTimeString('sv-SE', options);
+        // Rensa listan
+        meetingListEl.innerHTML = "";
 
-            nextEl.textContent = (current ? "Pågående möte: " : "Nästa möte: ") + meetingToShow.subject;
+        meetings.forEach(m => {
+            const startTime = new Date(m.start.dateTime);
+            const endTime = new Date(m.end.dateTime);
+            const options = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' };
 
-            const attendees = (meetingToShow.attendees || [])
-                .filter(a => a.emailAddress.name !== 'Mötesrum Test')
-                .map(a => a.emailAddress.name)
-                .join(", ") || "-";
-            attendeesEl.textContent = "Deltagare: " + attendees;
+            const li = document.createElement("li");
+            li.textContent = `${startTime.toLocaleTimeString('sv-SE', options)} - ${endTime.toLocaleTimeString('sv-SE', options)}: ${m.subject}`;
+            
+            // Lägg till deltagare om finns
+            if (m.attendees.length > 0) {
+                li.textContent += ` (Deltagare: ${m.attendees.map(a => a.emailAddress.name).join(", ")})`;
+            }
 
-        } else {
-            nextEl.textContent = "";
-            timeEl.textContent = "";
-            attendeesEl.textContent = "";
-        }
+            meetingListEl.appendChild(li);
+        });
 
     } catch (err) {
-        console.error("Fel vid hämtning av möte:", err);
+        console.error("Fel vid hämtning av möten:", err);
         statusEl.textContent = "Fel vid laddning";
-        nextEl.textContent = "";
-        timeEl.textContent = "";
-        attendeesEl.textContent = "";
+        meetingListEl.innerHTML = "";
     }
 }
 
