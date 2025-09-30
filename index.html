@@ -101,6 +101,9 @@ async function updateStatus() {
     const urlParams = new URLSearchParams(window.location.search);
     const roomEmail = urlParams.get("room") || "vastberga.mote1@hissen.se";
 
+    console.log("Valt rum:", roomEmail); // debug
+    console.log("API-url:", `${API_URL}?room=${encodeURIComponent(roomEmail)}`); // debug
+
     const statusEl = document.getElementById("status");
     const todayEl = document.getElementById("todayMeetings");
     const tomorrowEl = document.getElementById("tomorrowMeetings");
@@ -120,7 +123,7 @@ async function updateStatus() {
     statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
     statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
-    // Dagens möten
+    // Dagens möten (alla som börjar idag)
     const todayMeetingsArr = meetings.filter(m => {
         const start = new Date(m.start.dateTime);
         return start.toDateString() === now.toDateString();
