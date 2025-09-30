@@ -122,17 +122,20 @@ async function updateStatus() {
         const now = new Date();
         const meetings = data.meetings || [];
 
+        // Pågående möte
         const ongoing = meetings.find(
             m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime)
         );
         statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
         statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
+        // Dagens möten (inklusive framtida och tidigare idag)
         const todayMeetingsArr = meetings.filter(m => {
             const start = new Date(m.start.dateTime);
-            return start.toDateString() === now.toDateString() && start > now;
+            return start.toDateString() === now.toDateString();
         });
 
+        // Morgondagens möten
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowMeetingsArr = meetings.filter(m => {
@@ -140,6 +143,7 @@ async function updateStatus() {
             return start.toDateString() === tomorrow.toDateString();
         });
 
+        // Rendera dagens möten
         todayEl.innerHTML = "";
         if (ongoing) {
             const div = document.createElement("div");
@@ -155,18 +159,21 @@ async function updateStatus() {
             todayEl.appendChild(div);
         }
 
-        todayMeetingsArr.forEach(m => {
-            const div = document.createElement("div");
-            div.className = "meeting-card";
-            div.innerHTML = `
-                <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-                ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
-                <div>${m.subject}</div>
-                <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
-            `;
-            todayEl.appendChild(div);
-        });
+        todayMeetingsArr
+            .filter(m => m !== ongoing) // Ta bort pågående om den redan visas
+            .forEach(m => {
+                const div = document.createElement("div");
+                div.className = "meeting-card";
+                div.innerHTML = `
+                    <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
+                    ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+                    <div>${m.subject}</div>
+                    <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
+                `;
+                todayEl.appendChild(div);
+            });
 
+        // Rendera morgondagens möten
         tomorrowEl.innerHTML = "";
         tomorrowMeetingsArr.forEach(m => {
             const div = document.createElement("div");
@@ -179,6 +186,7 @@ async function updateStatus() {
             `;
             tomorrowEl.appendChild(div);
         });
+
     } catch (err) {
         console.error("Fel vid renderingen:", err);
         statusEl.textContent = "Fel vid laddning";
@@ -187,6 +195,7 @@ async function updateStatus() {
     }
 }
 
+// Starta uppdatering direkt + varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
