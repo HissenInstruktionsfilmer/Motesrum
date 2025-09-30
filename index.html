@@ -11,7 +11,6 @@ body {
     background: #f0f2f5;
     color: #333;
 }
-
 header {
     background: #bebfc2;
     text-align: center;
@@ -19,7 +18,6 @@ header {
     font-size: 2em;
     font-weight: bold;
 }
-
 #status {
     font-size: 10em;
     font-weight: bold;
@@ -27,17 +25,14 @@ header {
     margin: 50px auto;
     display: block;
 }
-
 .ledigt { color: #28a745; }
 .upptaget { color: #dc3545; }
-
 .container {
     display: flex;
     justify-content: space-around;
     margin: 50px;
     gap: 25px;
 }
-
 .column {
     flex: 1;
     background: white;
@@ -45,14 +40,12 @@ header {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
 .column h2 {
     border-bottom: 2px solid #1a73e8;
     padding-bottom: 10px;
     margin-bottom: 15px;
     font-size: 1.5em;
 }
-
 .meeting-card {
     padding: 10px 15px;
     margin-bottom: 10px;
@@ -60,16 +53,13 @@ header {
     background: #f8f9fa;
     border-radius: 5px;
 }
-
 .meeting-card.ongoing {
     border-left-color: #dc3545;
     background: #ffe5e5;
 }
-
 .meeting-time {
     font-weight: bold;
 }
-
 .attendees {
     font-size: 0.9em;
     color: #555;
@@ -94,9 +84,11 @@ header {
 </div>
 
 <script>
+const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
+
 async function fetchRoomData(roomEmail) {
     try {
-        const res = await fetch(`https://DIN-VERCEL-APP.vercel.app/api/roomStatus?room=${encodeURIComponent(roomEmail)}`);
+        const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return await res.json();
     } catch (err) {
@@ -117,65 +109,50 @@ async function updateStatus() {
     headerEl.textContent =
         roomEmail.includes("mote1") ? "Mötesrum – Västberga 1" : "Mötesrum – Västberga 2";
 
-    try {
-        const data = await fetchRoomData(roomEmail);
-        const now = new Date();
-        const meetings = data.meetings || [];
+    const data = await fetchRoomData(roomEmail);
+    const now = new Date();
+    const meetings = data.meetings || [];
 
-        // Pågående möte
-        const ongoing = meetings.find(
-            m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime)
-        );
-        statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
-        statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
+    // Pågående möte
+    const ongoing = meetings.find(
+        m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime)
+    );
+    statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
+    statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
-        // Dagens möten (inklusive framtida och tidigare idag)
-        const todayMeetingsArr = meetings.filter(m => {
-            const start = new Date(m.start.dateTime);
-            return start.toDateString() === now.toDateString();
-        });
+    // Dagens möten
+    const todayMeetingsArr = meetings.filter(m => {
+        const start = new Date(m.start.dateTime);
+        return start.toDateString() === now.toDateString();
+    });
 
-        // Morgondagens möten
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowMeetingsArr = meetings.filter(m => {
-            const start = new Date(m.start.dateTime);
-            return start.toDateString() === tomorrow.toDateString();
-        });
+    // Morgondagens möten
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowMeetingsArr = meetings.filter(m => {
+        const start = new Date(m.start.dateTime);
+        return start.toDateString() === tomorrow.toDateString();
+    });
 
-        // Rendera dagens möten
-        todayEl.innerHTML = "";
-        if (ongoing) {
-            const div = document.createElement("div");
-            div.className = "meeting-card ongoing";
-            div.innerHTML = `
-                <div class="meeting-time">Pågående: ${new Date(
-                    ongoing.start.dateTime
-                ).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-                ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
-                <div>${ongoing.subject}</div>
-                <div class="attendees">Bokad av: ${ongoing.organizer?.emailAddress?.name || "Okänd"}</div>
-            `;
-            todayEl.appendChild(div);
-        }
+    // Rendera dagens möten
+    todayEl.innerHTML = "";
+    if (ongoing) {
+        const div = document.createElement("div");
+        div.className = "meeting-card ongoing";
+        div.innerHTML = `
+            <div class="meeting-time">Pågående: ${new Date(
+                ongoing.start.dateTime
+            ).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
+            ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div>${ongoing.subject}</div>
+            <div class="attendees">Bokad av: ${ongoing.organizer?.emailAddress?.name || "Okänd"}</div>
+        `;
+        todayEl.appendChild(div);
+    }
 
-        todayMeetingsArr
-            .filter(m => m !== ongoing) // Ta bort pågående om den redan visas
-            .forEach(m => {
-                const div = document.createElement("div");
-                div.className = "meeting-card";
-                div.innerHTML = `
-                    <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-                    ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
-                    <div>${m.subject}</div>
-                    <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
-                `;
-                todayEl.appendChild(div);
-            });
-
-        // Rendera morgondagens möten
-        tomorrowEl.innerHTML = "";
-        tomorrowMeetingsArr.forEach(m => {
+    todayMeetingsArr
+        .filter(m => m !== ongoing)
+        .forEach(m => {
             const div = document.createElement("div");
             div.className = "meeting-card";
             div.innerHTML = `
@@ -184,15 +161,22 @@ async function updateStatus() {
                 <div>${m.subject}</div>
                 <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
             `;
-            tomorrowEl.appendChild(div);
+            todayEl.appendChild(div);
         });
 
-    } catch (err) {
-        console.error("Fel vid renderingen:", err);
-        statusEl.textContent = "Fel vid laddning";
-        todayEl.innerHTML = "";
-        tomorrowEl.innerHTML = "";
-    }
+    // Rendera morgondagens möten
+    tomorrowEl.innerHTML = "";
+    tomorrowMeetingsArr.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "meeting-card";
+        div.innerHTML = `
+            <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
+            ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div>${m.subject}</div>
+            <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
+        `;
+        tomorrowEl.appendChild(div);
+    });
 }
 
 // Starta uppdatering direkt + varje minut
