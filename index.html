@@ -110,7 +110,7 @@ async function updateStatus() {
     const headerEl = document.querySelector("header");
 
     headerEl.textContent =
-        roomEmail.includes("mote1") ? "Mötesrum – Västberga 1" : "Mötesrum – Västberga 2";
+        roomEmail.includes("mote1") ? "Mötesrum 1 – Västberga" : "Mötesrum 2 – Västberga";
 
     const data = await fetchRoomData(roomEmail);
     const now = new Date();
