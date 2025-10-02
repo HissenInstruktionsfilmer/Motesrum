@@ -23,11 +23,9 @@ header {
     font-weight: bold;
     text-align: center;
     margin: 50px auto;
-    display: block;
 }
 .ledigt { color: #28a745; }
 .upptaget { color: #dc3545; }
-
 .container {
     display: flex;
     justify-content: space-around;
@@ -58,41 +56,9 @@ header {
     border-left-color: #dc3545;
     background: #ffe5e5;
 }
-.meeting-time {
-    font-weight: bold;
-}
-.attendees {
-    font-size: 0.9em;
-    color: #555;
-    margin-top: 5px;
-}
-
-/* Overlay för otillåtet rum */
-#blockedOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    text-align: center;
-    z-index: 100;
-    display: none;
-}
-#blockedOverlay h1 {
-    font-size: 3em;
-    margin-bottom: 20px;
-}
-#blockedOverlay p {
-    font-size: 1.5em;
-    max-width: 600px;
-}
+.meeting-time { font-weight: bold; }
+.attendees { font-size: 0.9em; color: #555; margin-top: 5px; }
+.error { text-align: center; color: #dc3545; font-size: 2em; margin-top: 50px; }
 </style>
 </head>
 <body>
@@ -111,77 +77,63 @@ header {
     </div>
 </div>
 
-<div id="blockedOverlay">
-    <h1>Rummet är ej tillåtet</h1>
-    <p>Det här rummet kan inte visas på den här sidan. Kontrollera att du använder en tillåten rumsepostadress.</p>
-</div>
-
 <script>
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
-
-// Lista över tillåtna rum med displaynamn
-const allowedRooms = {
-    "vastberga.mote1@hissen.se": "Mötesrum 1 – Västberga",
-    "vastberga.mote2@hissen.se": "Mötesrum 2 – Västberga",
-    "storakonferensrummet@hissen.se": "Stora Konferensrummet – Västberga"
-};
 
 async function fetchRoomData(roomEmail) {
     try {
         const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `HTTP error! status: ${res.status}`);
-        }
         return await res.json();
     } catch (err) {
         console.error("Fel vid hämtning av möten:", err);
-        return { error: true, message: err.message, meetings: [] };
+        return { meetings: [], error: "Kunde inte kontakta API" };
     }
 }
 
 async function updateStatus() {
     const urlParams = new URLSearchParams(window.location.search);
-    const roomEmail = urlParams.get("room") || "vastberga.mote1@hissen.se";
+    const roomEmail = urlParams.get("room");
 
     const statusEl = document.getElementById("status");
     const todayEl = document.getElementById("todayMeetings");
     const tomorrowEl = document.getElementById("tomorrowMeetings");
     const headerEl = document.querySelector("header");
-    const overlayEl = document.getElementById("blockedOverlay");
 
-    // Automatisk header baserat på e-post
-    if (allowedRooms[roomEmail]) {
-        headerEl.textContent = allowedRooms[roomEmail];
-    } else {
-        headerEl.textContent = "Otillåtet rum";
+    if (!roomEmail) {
+        statusEl.style.display = "none";
+        todayEl.innerHTML = tomorrowEl.innerHTML = "";
+        headerEl.textContent = "Ingen rumsadress angiven";
+        return;
     }
 
     const data = await fetchRoomData(roomEmail);
 
-    if (data.error || !allowedRooms[roomEmail]) {
-        overlayEl.style.display = "flex"; // visa overlay
-        statusEl.textContent = "Ej tillgängligt";
-        statusEl.className = "status upptaget";
-        todayEl.innerHTML = "";
-        tomorrowEl.innerHTML = "";
+    // Om rummet inte är tillåtet
+    if (data.error) {
+        statusEl.style.display = "none";
+        todayEl.innerHTML = tomorrowEl.innerHTML = "";
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "error";
+        errorDiv.textContent = "Rummet är inte tillåtet eller finns inte";
+        document.body.appendChild(errorDiv);
+        headerEl.textContent = roomEmail;
         return;
     }
 
-    overlayEl.style.display = "none"; // göm overlay
+    headerEl.textContent = data.displayName || roomEmail;
+
     const now = new Date();
     const meetings = data.meetings || [];
 
-    const ongoing = meetings.find(
-        m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime)
-    );
+    // Pågående möte
+    const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
     statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
     statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
+    // Dagens möten
     const todayMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === now.toDateString());
-
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Morgondagens möten
+    const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
     const tomorrowMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === tomorrow.toDateString());
 
     todayEl.innerHTML = "";
@@ -220,6 +172,7 @@ async function updateStatus() {
     });
 }
 
+// Starta direkt + uppdatera varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
