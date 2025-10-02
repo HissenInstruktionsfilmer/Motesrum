@@ -119,6 +119,13 @@ header {
 <script>
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
 
+// Lista över tillåtna rum med displaynamn
+const allowedRooms = {
+    "vastberga.mote1@hissen.se": "Mötesrum 1 – Västberga",
+    "vastberga.mote2@hissen.se": "Mötesrum 2 – Västberga",
+    "storakonferensrummet@hissen.se": "Stora Konferensrummet – Västberga"
+};
+
 async function fetchRoomData(roomEmail) {
     try {
         const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
@@ -143,15 +150,16 @@ async function updateStatus() {
     const headerEl = document.querySelector("header");
     const overlayEl = document.getElementById("blockedOverlay");
 
-    headerEl.textContent =
-        roomEmail.includes("mote1") ? "Mötesrum 1 – Västberga" :
-        roomEmail.includes("mote2") ? "Mötesrum 2 – Västberga" :
-        roomEmail.includes("storakonferens") ? "Stora Konferensrummet – Västberga" :
-        "Mötesrum – Västberga";
+    // Automatisk header baserat på e-post
+    if (allowedRooms[roomEmail]) {
+        headerEl.textContent = allowedRooms[roomEmail];
+    } else {
+        headerEl.textContent = "Otillåtet rum";
+    }
 
     const data = await fetchRoomData(roomEmail);
 
-    if (data.error) {
+    if (data.error || !allowedRooms[roomEmail]) {
         overlayEl.style.display = "flex"; // visa overlay
         statusEl.textContent = "Ej tillgängligt";
         statusEl.className = "status upptaget";
