@@ -66,11 +66,10 @@ header {
     margin-top: 5px;
 }
 .error {
-    color: red;
+    color: #dc3545;
     text-align: center;
     font-size: 1.5em;
     margin-top: 30px;
-    font-weight: bold;
 }
 </style>
 </head>
@@ -96,11 +95,14 @@ const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.ap
 async function fetchRoomData(roomEmail) {
     try {
         const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+        }
         return await res.json();
     } catch (err) {
         console.error("Fel vid hämtning av möten:", err);
-        return { error: true, meetings: [] };
+        return { error: true, message: err.message, meetings: [] };
     }
 }
 
@@ -113,83 +115,72 @@ async function updateStatus() {
     const tomorrowEl = document.getElementById("tomorrowMeetings");
     const headerEl = document.querySelector("header");
 
+    headerEl.textContent =
+        roomEmail.includes("mote1") ? "Mötesrum 1 – Västberga" :
+        roomEmail.includes("mote2") ? "Mötesrum 2 – Västberga" :
+        roomEmail.includes("storakonferens") ? "Stora Konferensrummet – Västberga" :
+        "Mötesrum – Västberga";
+
     const data = await fetchRoomData(roomEmail);
 
-    if (data.error || (data.meetings && data.meetings.length === 0 && roomEmail)) {
-        statusEl.innerHTML = `<div class="error">Kunde inte hämta kalendern för <b>${roomEmail}</b></div>`;
-        headerEl.textContent = "Mötesrum – Västberga";
-        todayEl.innerHTML = "";
-        tomorrowEl.innerHTML = "";
+    // Om rummet inte finns/tillåtet
+    if (data.error) {
+        statusEl.textContent = "Ej tillgängligt";
+        statusEl.className = "status upptaget";
+        todayEl.innerHTML = `<div class="error">${data.message}</div>`;
+        tomorrowEl.innerHTML = `<div class="error">${data.message}</div>`;
         return;
     }
 
     const now = new Date();
     const meetings = data.meetings || [];
 
-    if (roomEmail.includes("mote1")) {
-        headerEl.textContent = "Mötesrum 1 – Västberga";
-    } else if (roomEmail.includes("mote2")) {
-        headerEl.textContent = "Mötesrum 2 – Västberga";
-    } else if (roomEmail.includes("storakonferensrummet")) {
-        headerEl.textContent = "Stora konferensrummet – Västberga";
-    } else {
-        headerEl.textContent = "Mötesrum – Västberga";
-    }
-
+    // Pågående möte
     const ongoing = meetings.find(
         m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime)
     );
     statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
     statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
-    const todayMeetingsArr = meetings.filter(m => {
-        const start = new Date(m.start.dateTime);
-        return start.toDateString() === now.toDateString();
-    });
+    // Dagens möten
+    const todayMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === now.toDateString());
 
+    // Morgondagens möten
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowMeetingsArr = meetings.filter(m => {
-        const start = new Date(m.start.dateTime);
-        return start.toDateString() === tomorrow.toDateString();
-    });
+    const tomorrowMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === tomorrow.toDateString());
 
+    // Rendera dagens möten
     todayEl.innerHTML = "";
     if (ongoing) {
         const div = document.createElement("div");
         div.className = "meeting-card ongoing";
         div.innerHTML = `
-            <div class="meeting-time">Pågående: ${new Date(
-                ongoing.start.dateTime
-            ).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-            ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div class="meeting-time">Pågående: ${new Date(ongoing.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div>
             <div>${ongoing.subject}</div>
             <div class="attendees">Bokad av: ${ongoing.organizer?.emailAddress?.name || "Okänd"}</div>
         `;
         todayEl.appendChild(div);
     }
 
-    todayMeetingsArr
-        .filter(m => m !== ongoing)
-        .forEach(m => {
-            const div = document.createElement("div");
-            div.className = "meeting-card";
-            div.innerHTML = `
-                <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-                ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
-                <div>${m.subject}</div>
-                <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
-            `;
-            todayEl.appendChild(div);
-        });
+    todayMeetingsArr.filter(m => m !== ongoing).forEach(m => {
+        const div = document.createElement("div");
+        div.className = "meeting-card";
+        div.innerHTML = `
+            <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div>
+            <div>${m.subject}</div>
+            <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
+        `;
+        todayEl.appendChild(div);
+    });
 
+    // Rendera morgondagens möten
     tomorrowEl.innerHTML = "";
     tomorrowMeetingsArr.forEach(m => {
         const div = document.createElement("div");
         div.className = "meeting-card";
         div.innerHTML = `
-            <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-            ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div>
             <div>${m.subject}</div>
             <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
         `;
