@@ -86,6 +86,13 @@ header {
 <script>
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
 
+function getRoomName(roomEmail) {
+    if (roomEmail.includes("mote1")) return "Mötesrum 1 – Västberga";
+    if (roomEmail.includes("mote2")) return "Mötesrum 2 – Västberga";
+    if (roomEmail.includes("storakonferensrummet")) return "Stora Konferensrummet – Västberga";
+    return "Mötesrum – Västberga";
+}
+
 async function fetchRoomData(roomEmail) {
     try {
         const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
@@ -101,29 +108,23 @@ async function updateStatus() {
     const urlParams = new URLSearchParams(window.location.search);
     const roomEmail = urlParams.get("room") || "vastberga.mote1@hissen.se";
 
-    console.log("Valt rum:", roomEmail); // debug
-    console.log("API-url:", `${API_URL}?room=${encodeURIComponent(roomEmail)}`); // debug
+    const headerEl = document.querySelector("header");
+    headerEl.textContent = getRoomName(roomEmail);
 
     const statusEl = document.getElementById("status");
     const todayEl = document.getElementById("todayMeetings");
     const tomorrowEl = document.getElementById("tomorrowMeetings");
-    const headerEl = document.querySelector("header");
-
-    headerEl.textContent =
-        roomEmail.includes("mote1") ? "Mötesrum 1 – Västberga" : "Mötesrum 2 – Västberga";
 
     const data = await fetchRoomData(roomEmail);
     const now = new Date();
     const meetings = data.meetings || [];
 
     // Pågående möte
-    const ongoing = meetings.find(
-        m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime)
-    );
+    const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
     statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
     statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
-    // Dagens möten (alla som börjar idag)
+    // Dagens möten
     const todayMeetingsArr = meetings.filter(m => {
         const start = new Date(m.start.dateTime);
         return start.toDateString() === now.toDateString();
@@ -143,10 +144,8 @@ async function updateStatus() {
         const div = document.createElement("div");
         div.className = "meeting-card ongoing";
         div.innerHTML = `
-            <div class="meeting-time">Pågående: ${new Date(
-                ongoing.start.dateTime
-            ).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-            ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div class="meeting-time">Pågående: ${new Date(ongoing.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - 
+            ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div>
             <div>${ongoing.subject}</div>
             <div class="attendees">Bokad av: ${ongoing.organizer?.emailAddress?.name || "Okänd"}</div>
         `;
@@ -159,8 +158,8 @@ async function updateStatus() {
             const div = document.createElement("div");
             div.className = "meeting-card";
             div.innerHTML = `
-                <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-                ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+                <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - 
+                ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div>
                 <div>${m.subject}</div>
                 <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
             `;
@@ -173,8 +172,8 @@ async function updateStatus() {
         const div = document.createElement("div");
         div.className = "meeting-card";
         div.innerHTML = `
-            <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - 
-            ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - 
+            ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div>
             <div>${m.subject}</div>
             <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
         `;
@@ -182,7 +181,7 @@ async function updateStatus() {
     });
 }
 
-// Starta uppdatering direkt + varje minut
+// Starta direkt och uppdatera varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
