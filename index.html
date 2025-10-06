@@ -30,7 +30,7 @@ header {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 #status {
-    font-size: 12em; /* mindre för tablet */
+    font-size: 12em;
     font-weight: 700;
     text-align: center;
     margin: 30px auto;
@@ -40,13 +40,13 @@ header {
 .upptaget { color: #dc3545; }
 .container {
     display: flex;
-    justify-content: space-around; /* behåll bredvid varandra */
+    justify-content: space-around;
     margin: 30px;
     gap: 20px;
 }
 .column {
     flex: 1;
-    min-width: 0; /* förhindra overflow */
+    min-width: 0;
     background: white;
     padding: 15px;
     border-radius: 10px;
@@ -75,7 +75,6 @@ header {
 .attendees { font-size: 0.85em; color: #555; margin-top: 4px; }
 .error { text-align: center; color: #dc3545; font-size: 1.8em; margin-top: 40px; }
 
-/* Media query för mindre tablets/landscape */
 @media (max-width: 1280px) {
     #status { font-size: 7em; margin: 20px auto; }
     .container { gap: 15px; margin: 20px; }
@@ -85,7 +84,6 @@ header {
     .attendees { font-size: 0.8em; }
 }
 </style>
-
 </head>
 <body>
 
@@ -104,6 +102,13 @@ header {
 </div>
 
 <script>
+// Registrera service worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('Service Worker registrerad'))
+        .catch(console.error);
+}
+
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
 
 async function fetchRoomData(roomEmail) {
@@ -134,7 +139,6 @@ async function updateStatus() {
 
     const data = await fetchRoomData(roomEmail);
 
-    // Om rummet inte är tillåtet
     if (data.error) {
         statusEl.style.display = "none";
         todayEl.innerHTML = tomorrowEl.innerHTML = "";
@@ -151,14 +155,11 @@ async function updateStatus() {
     const now = new Date();
     const meetings = data.meetings || [];
 
-    // Pågående möte
     const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
     statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
     statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
 
-    // Dagens möten
     const todayMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === now.toDateString());
-    // Morgondagens möten
     const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
     const tomorrowMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === tomorrow.toDateString());
 
@@ -198,7 +199,6 @@ async function updateStatus() {
     });
 }
 
-// Starta direkt + uppdatera varje minut
 updateStatus();
 setInterval(updateStatus, 60000);
 </script>
