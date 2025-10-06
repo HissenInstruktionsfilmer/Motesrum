@@ -4,7 +4,7 @@
   "description": "Se om Stora Konferensrummet är ledigt eller upptaget och dagens möten",
   "start_url": "./?room=storakonferensrummet@hissen.se",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#f0f2f5",
   "theme_color": "#bebfc2",
   "orientation": "portrait",
