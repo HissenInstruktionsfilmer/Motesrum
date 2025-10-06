@@ -2,7 +2,7 @@
   "name": "Stora Konferensrummet – Västberga",
   "short_name": "Konferensrum",
   "description": "Se om Stora Konferensrummet är ledigt eller upptaget och dagens möten",
-  "start_url": "/index.html?room=storakonferensrummet@hissen.se",
+  "start_url": "/Motesrum/?room=storakonferensrummet@hissen.se",
   "display": "standalone",
   "background_color": "#f0f2f5",
   "theme_color": "#bebfc2",
