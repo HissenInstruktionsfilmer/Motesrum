@@ -7,6 +7,5 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Enkel fetch – kan utökas med cache senare
   event.respondWith(fetch(event.request));
 });
