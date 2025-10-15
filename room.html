@@ -7,43 +7,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 html, body {
-    margin:0;
-    padding:0;
-    height:100%;
-    background:#f0f2f5;
-    font-family:"Segoe UI",Arial,sans-serif;
-    color:#333;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #f0f2f5;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #333;
     display: flex;
     flex-direction: column;
 }
 
 header {
-    background:#bebfc2;
-    text-align:center;
-    padding:15px 0;
-    font-size:1.8em;
-    font-weight:600;
-    color:#222;
+    background: #bebfc2;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #222;
     flex-shrink: 0;
 }
 
 #status {
-    font-size:12em;
-    font-weight:700;
-    text-align:center;
-    margin:30px auto;
-    transition:color 0.3s;
+    font-size: 12em;
+    font-weight: 700;
+    text-align: center;
+    margin: 30px auto;
+    transition: color 0.3s;
     flex-shrink: 0;
 }
 
+.ledigt { color: #28a745; }   /* grön */
+.upptaget { color: #dc3545; } /* röd */
+
 .container {
-    display:flex;
-    justify-content:space-around;
-    margin:30px;
-    gap:20px;
-    flex: 1; /* Tar allt tillgängligt utrymme */
-    min-height: 0; /* Viktigt för scroll och flex */
-    padding-bottom: 40px; /* Minimumavstånd till botten */
+    display: flex;
+    justify-content: space-around;
+    margin: 20px;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 10px; /* minsta mellanrum till botten */
     box-sizing: border-box;
 }
 
@@ -54,10 +57,9 @@ header {
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-
     display: flex;
-    flex-direction: column;  /* Gör kolumnen vertikal flex */
-    max-height: 100%;        /* Säkerställer att kolumnen inte växer utanför */
+    flex-direction: column;
+    max-height: 100%;
 }
 
 .column h2 {
@@ -66,20 +68,48 @@ header {
     margin-bottom: 12px;
     font-size: 1.3em;
     font-weight: 600;
-    flex-shrink: 0;          /* H2 tar bara sin höjd */
+    flex-shrink: 0;
 }
 
 #todayMeetings, #tomorrowMeetings {
-    flex: 1;                  /* Tar allt återstående utrymme i kolumnen */
-    overflow-y: auto;         /* Scrollbar om innehållet blir för långt */
+    flex: 1;
+    overflow-y: auto;
 }
 
-.meeting-card { padding:8px 12px; margin-bottom:8px; border-left:5px solid #1a73e8; background:#f8f9fa; border-radius:5px; }
-.meeting-card.ongoing { border-left-color:#dc3545; background:#ffe5e5; }
-.meeting-time { font-weight:600; }
-.attendees { font-size:0.85em; color:#555; margin-top:4px; }
-.error { text-align:center; color:#dc3545; font-size:1.8em; margin-top:40px; }
-#installBtn { display:none; padding:10px 20px; margin:20px auto; font-size:1.2em; background:#1a73e8; color:white; border:none; border-radius:8px; cursor:pointer; }
+.meeting-card {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-left: 5px solid #1a73e8;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.meeting-card.ongoing {
+    border-left-color: #dc3545;
+    background: #ffe5e5;
+}
+
+.meeting-time { font-weight: 600; }
+.attendees { font-size: 0.85em; color: #555; margin-top: 4px; }
+
+.error {
+    text-align: center;
+    color: #dc3545;
+    font-size: 1.8em;
+    margin-top: 40px;
+}
+
+#installBtn {
+    display: none;
+    padding: 10px 20px;
+    margin: 20px auto;
+    font-size: 1.2em;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -122,10 +152,19 @@ async function updateStatus() {
     const tomorrowEl = document.getElementById("tomorrowMeetings");
     const headerEl = document.querySelector("header");
 
-    if (!roomEmail) { statusEl.style.display="none"; headerEl.textContent="Ingen rumsadress angiven"; return; }
+    if (!roomEmail) { 
+        statusEl.style.display="none"; 
+        headerEl.textContent="Ingen rumsadress angiven"; 
+        return; 
+    }
 
     const data = await fetchRoomData(roomEmail);
-    if (data.error) { statusEl.style.display="none"; todayEl.innerHTML=tomorrowEl.innerHTML=""; headerEl.textContent = roomEmail; return; }
+    if (data.error) { 
+        statusEl.style.display="none"; 
+        todayEl.innerHTML=tomorrowEl.innerHTML=""; 
+        headerEl.textContent = roomEmail; 
+        return; 
+    }
 
     headerEl.textContent = data.displayName || roomEmail;
     const now = new Date();
@@ -145,7 +184,8 @@ async function updateStatus() {
     }
 
     const today = now.toDateString();
-    const tomorrowDate = new Date(now); tomorrowDate.setDate(tomorrowDate.getDate()+1);
+    const tomorrowDate = new Date(now); 
+    tomorrowDate.setDate(tomorrowDate.getDate()+1);
 
     renderMeetings(todayEl, meetings.filter(m => new Date(m.start.dateTime).toDateString()===today));
     renderMeetings(tomorrowEl, meetings.filter(m => new Date(m.start.dateTime).toDateString()===tomorrowDate.toDateString()));
@@ -154,6 +194,23 @@ async function updateStatus() {
 updateStatus();
 setInterval(updateStatus, 60000);
 setInterval(()=>location.reload(), 1000*60*30);
+
+// Scrolla upp automatiskt efter 30 sek inaktivitet
+let scrollTimers = {};
+function resetScrollTimer(container) {
+    if(scrollTimers[container.id]) clearTimeout(scrollTimers[container.id]);
+    scrollTimers[container.id] = setTimeout(() => {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 30000);
+}
+
+const todayContainer = document.getElementById("todayMeetings");
+const tomorrowContainer = document.getElementById("tomorrowMeetings");
+
+[todayContainer, tomorrowContainer].forEach(container => {
+    container.addEventListener('scroll', () => resetScrollTimer(container));
+    resetScrollTimer(container); // starta timer initialt
+});
 
 // PWA-installation
 let deferredPrompt;
