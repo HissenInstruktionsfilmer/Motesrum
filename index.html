@@ -2,203 +2,63 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>Mötesrum Status</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#bebfc2">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icons/conference-192.png">
-<link rel="shortcut icon" href="icons/conference-192.png">
-
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
+<title>Välj Mötesrum</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden; /* förhindra scroll */
-    touch-action: none; /* förhindra swipe/zoom */
-    user-select: none; /* ingen markering */
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    background: #f0f2f5;
-    font-family: "Segoe UI", Arial, sans-serif;
-    color: #333;
-}
-header {
-    background: #bebfc2;
-    text-align: center;
-    padding: 15px 0;
-    font-size: 1.8em;
-    font-weight: 600;
-    color: #222;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    -webkit-touch-callout: none;
-}
-#status {
-    font-size: 12em;
-    font-weight: 700;
-    text-align: center;
-    margin: 30px auto;
-    transition: color 0.3s;
-    -webkit-touch-callout: none;
-}
-.ledigt { color: #28a745; }
-.upptaget { color: #dc3545; }
-.container {
+body {
+    font-family: "Segoe UI", sans-serif;
     display: flex;
-    justify-content: space-around;
-    margin: 30px;
-    gap: 20px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background: #f0f2f5;
 }
-.column {
-    flex: 1;
-    min-width: 0;
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+h1 { margin-bottom: 20px; }
+button {
+    padding: 12px 20px;
+    margin: 10px;
+    font-size: 1.2em;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #1a73e8;
+    color: white;
+    transition: background 0.3s;
 }
-.column h2 {
-    border-bottom: 2px solid #1a73e8;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-    font-size: 1.3em;
-    font-weight: 600;
-}
-.meeting-card {
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-left: 5px solid #1a73e8;
-    background: #f8f9fa;
-    border-radius: 5px;
-}
-.meeting-card.ongoing {
-    border-left-color: #dc3545;
-    background: #ffe5e5;
-}
-.meeting-time { font-weight: 600; }
-.attendees { font-size: 0.85em; color: #555; margin-top: 4px; }
-.error { text-align: center; color: #dc3545; font-size: 1.8em; margin-top: 40px; }
-
-@media (max-width: 1280px) {
-    #status { font-size: 7em; margin: 20px auto; }
-    .container { gap: 15px; margin: 20px; }
-    .column { padding: 12px; }
-    .column h2 { font-size: 1.2em; }
-    .meeting-card { padding: 6px 10px; }
-    .attendees { font-size: 0.8em; }
-}
+button:hover { background: #1662c0; }
 </style>
 </head>
 <body>
 
-<header>Mötesrum</header>
-<div id="status" class="status">Laddar...</div>
-
-<div class="container">
-    <div class="column" id="todayColumn">
-        <h2>Möten idag</h2>
-        <div id="todayMeetings"></div>
-    </div>
-    <div class="column" id="tomorrowColumn">
-        <h2>Möten imorgon</h2>
-        <div id="tomorrowMeetings"></div>
-    </div>
-</div>
+<div id="roomButtons"></div>
+<button onclick="showOverview()">Översikt - Västberga</button>
 
 <script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(() => console.log('Service Worker registrerad'));
+function showOverview() {
+    // Här kan du fördefiniera vilka rum som ska visas i översikten
+    const rooms = [
+        'vastberga.mote1@hissen.se',
+        'vastberga.mote2@hissen.se'
+    ];
+    window.location.href = 'overview.html?rooms=' + encodeURIComponent(rooms.join(','));
 }
 
-const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
+// Skapa knappar för rumsval
+const rooms = [
+    { email: 'vastberga.mote1@hissen.se', name: 'Mötesrum 1 - Västberga' },
+    { email: 'vastberga.mote2@hissen.se', name: 'Mötesrum 2 - Västberga' },
+    { email: 'storakonferensrummet@hissen.se', name: 'Stora konferensrummet' }
+];
 
-async function fetchRoomData(roomEmail) {
-    try {
-        const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
-        return await res.json();
-    } catch (err) {
-        console.error("Fel vid hämtning av möten:", err);
-        return { meetings: [], error: "Kunde inte kontakta API" };
-    }
-}
-
-async function updateStatus() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomEmail = urlParams.get("room");
-    const statusEl = document.getElementById("status");
-    const todayEl = document.getElementById("todayMeetings");
-    const tomorrowEl = document.getElementById("tomorrowMeetings");
-    const headerEl = document.querySelector("header");
-
-    if (!roomEmail) {
-        statusEl.style.display = "none";
-        todayEl.innerHTML = tomorrowEl.innerHTML = "";
-        headerEl.textContent = "Ingen rumsadress angiven";
-        return;
-    }
-
-    const data = await fetchRoomData(roomEmail);
-
-    if (data.error) {
-        statusEl.style.display = "none";
-        todayEl.innerHTML = tomorrowEl.innerHTML = "";
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "error";
-        errorDiv.textContent = "Rummet är inte tillåtet eller finns inte";
-        document.body.appendChild(errorDiv);
-        headerEl.textContent = roomEmail;
-        return;
-    }
-
-    headerEl.textContent = data.displayName || roomEmail;
-    const now = new Date();
-    const meetings = data.meetings || [];
-    const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
-    statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
-    statusEl.className = "status " + (ongoing ? "upptaget" : "ledigt");
-
-    const todayMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === now.toDateString());
-    const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
-    const tomorrowMeetingsArr = meetings.filter(m => new Date(m.start.dateTime).toDateString() === tomorrow.toDateString());
-
-    todayEl.innerHTML = "";
-    if (ongoing) {
-        const div = document.createElement("div");
-        div.className = "meeting-card ongoing";
-        div.innerHTML = `<div class="meeting-time">Pågående: ${new Date(ongoing.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(ongoing.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div><div>${ongoing.subject}</div><div class="attendees">Bokad av: ${ongoing.organizer?.emailAddress?.name || "Okänd"}</div>`;
-        todayEl.appendChild(div);
-    }
-
-    todayMeetingsArr.filter(m => m !== ongoing).forEach(m => {
-        const div = document.createElement("div");
-        div.className = "meeting-card";
-        div.innerHTML = `<div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div><div>${m.subject}</div><div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>`;
-        todayEl.appendChild(div);
-    });
-
-    tomorrowEl.innerHTML = "";
-    tomorrowMeetingsArr.forEach(m => {
-        const div = document.createElement("div");
-        div.className = "meeting-card";
-        div.innerHTML = `<div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div><div>${m.subject}</div><div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>`;
-        tomorrowEl.appendChild(div);
-    });
-}
-
-// Uppdatera varje minut
-updateStatus();
-setInterval(updateStatus, 60000);
-
-// Ladda om sidan helt varje timme
-setInterval(() => {
-    location.reload();
-}, 1000 * 60 * 30);
-
+const container = document.getElementById('roomButtons');
+rooms.forEach(r => {
+    const btn = document.createElement('button');
+    btn.textContent = r.name;
+    btn.onclick = () => window.location.href = `room.html?room=${encodeURIComponent(r.email)}`;
+    container.appendChild(btn);
+});
 </script>
 
 </body>
