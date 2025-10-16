@@ -168,13 +168,22 @@ async function fetchStatus(roomEmail){
     const now = new Date();
     const meetings = data.meetings || [];
     const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
-    const upcoming = meetings.find(m => new Date(m.start.dateTime) > now);
-
+    
+    // Filtrera möten som är **idag**
+    const todayStr = now.toDateString();
+    const todaysMeetings = meetings.filter(m => new Date(m.start.dateTime).toDateString() === todayStr);
+    
+    // Hitta nästa möte **idag** som börjar efter nu
+    const upcomingToday = todaysMeetings.find(m => new Date(m.start.dateTime) > now);
+    
     return {
       displayName: data.displayName || roomEmail,
       status: ongoing ? 'upptaget' : 'ledigt',
-      nextMeeting: upcoming ? `Nästa ${new Date(upcoming.start.dateTime).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})} — ${upcoming.subject}` : 'Inga fler möten idag'
+      nextMeeting: upcomingToday 
+        ? `Nästa ${new Date(upcomingToday.start.dateTime).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})} — ${upcomingToday.subject}`
+        : 'Inga fler möten idag'
     };
+
   } catch {
     return { displayName: roomEmail, status: 'okänd', nextMeeting: null };
   }
