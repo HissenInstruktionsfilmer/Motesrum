@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <title>Mötesrum Status</title>
 <link rel="manifest" href="manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <style>
 html, body {
     margin: 0;
@@ -15,8 +16,21 @@ html, body {
     color: #333;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
+/* Förhindra textmarkering, zoom och långtryck */
+* {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+img, a {
+    -webkit-user-drag: none;
+}
+
+/* Struktur */
 header {
     background: #bebfc2;
     text-align: center;
@@ -36,8 +50,8 @@ header {
     flex-shrink: 0;
 }
 
-.ledigt { color: #28a745; }   /* grön */
-.upptaget { color: #dc3545; } /* röd */
+.ledigt { color: #28a745; }
+.upptaget { color: #dc3545; }
 
 .container {
     display: flex;
@@ -46,7 +60,7 @@ header {
     gap: 20px;
     flex: 1;
     min-height: 0;
-    padding-bottom: 10px; /* minsta mellanrum till botten */
+    padding-bottom: 20px; /* mellanrum mot botten */
     box-sizing: border-box;
 }
 
@@ -74,6 +88,9 @@ header {
 #todayMeetings, #tomorrowMeetings {
     flex: 1;
     overflow-y: auto;
+    user-select: auto;
+    -webkit-user-select: auto;
+    touch-action: pan-y;
 }
 
 .meeting-card {
@@ -83,7 +100,6 @@ header {
     background: #f8f9fa;
     border-radius: 5px;
 }
-
 .meeting-card.ongoing {
     border-left-color: #dc3545;
     background: #ffe5e5;
@@ -101,14 +117,6 @@ header {
 
 #installBtn {
     display: none;
-    padding: 10px 20px;
-    margin: 20px auto;
-    font-size: 1.2em;
-    background: #1a73e8;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
 }
 </style>
 </head>
@@ -116,6 +124,7 @@ header {
 
 <header>Mötesrum</header>
 <div id="status">Laddar...</div>
+
 <div class="container">
     <div class="column" id="todayColumn">
         <h2>Möten idag</h2>
@@ -126,7 +135,6 @@ header {
         <div id="tomorrowMeetings"></div>
     </div>
 </div>
-<button id="installBtn">Installera som app</button>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -152,18 +160,18 @@ async function updateStatus() {
     const tomorrowEl = document.getElementById("tomorrowMeetings");
     const headerEl = document.querySelector("header");
 
-    if (!roomEmail) { 
-        statusEl.style.display="none"; 
-        headerEl.textContent="Ingen rumsadress angiven"; 
-        return; 
+    if (!roomEmail) {
+        statusEl.style.display = "none";
+        headerEl.textContent = "Ingen rumsadress angiven";
+        return;
     }
 
     const data = await fetchRoomData(roomEmail);
-    if (data.error) { 
-        statusEl.style.display="none"; 
-        todayEl.innerHTML=tomorrowEl.innerHTML=""; 
-        headerEl.textContent = roomEmail; 
-        return; 
+    if (data.error) {
+        statusEl.style.display = "none";
+        todayEl.innerHTML = tomorrowEl.innerHTML = "";
+        headerEl.textContent = roomEmail;
+        return;
     }
 
     headerEl.textContent = data.displayName || roomEmail;
@@ -177,54 +185,47 @@ async function updateStatus() {
         containerEl.innerHTML = "";
         meetingsArr.forEach(m => {
             const div = document.createElement("div");
-            div.className = "meeting-card" + (m===ongoing?" ongoing":"");
-            div.innerHTML = `<div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div><div>${m.subject}</div><div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name||"Okänd"}</div>`;
+            div.className = "meeting-card" + (m === ongoing ? " ongoing" : "");
+            div.innerHTML = `
+                <div class="meeting-time">
+                    ${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - 
+                    ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}
+                </div>
+                <div>${m.subject}</div>
+                <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
+            `;
             containerEl.appendChild(div);
         });
     }
 
     const today = now.toDateString();
-    const tomorrowDate = new Date(now); 
-    tomorrowDate.setDate(tomorrowDate.getDate()+1);
+    const tomorrowDate = new Date(now);
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
-    renderMeetings(todayEl, meetings.filter(m => new Date(m.start.dateTime).toDateString()===today));
-    renderMeetings(tomorrowEl, meetings.filter(m => new Date(m.start.dateTime).toDateString()===tomorrowDate.toDateString()));
+    renderMeetings(todayEl, meetings.filter(m => new Date(m.start.dateTime).toDateString() === today));
+    renderMeetings(tomorrowEl, meetings.filter(m => new Date(m.start.dateTime).toDateString() === tomorrowDate.toDateString()));
 }
 
 updateStatus();
 setInterval(updateStatus, 60000);
-setInterval(()=>location.reload(), 1000*60*30);
+setInterval(() => location.reload(), 1000 * 60 * 30);
 
-// Scrolla upp automatiskt efter 30 sek inaktivitet
-let scrollTimers = {};
+/* --- Scroll Reset efter 7 sek inaktivitet --- */
+const scrollContainers = [document.getElementById("todayMeetings"), document.getElementById("tomorrowMeetings")];
+const scrollTimers = new Map();
+
 function resetScrollTimer(container) {
-    if(scrollTimers[container.id]) clearTimeout(scrollTimers[container.id]);
-    scrollTimers[container.id] = setTimeout(() => {
-        container.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 30000);
+    if (scrollTimers.has(container)) clearTimeout(scrollTimers.get(container));
+    scrollTimers.set(container, setTimeout(() => {
+        container.scrollTo({ top: 0, behavior: "smooth" });
+    }, 7000));
 }
 
-const todayContainer = document.getElementById("todayMeetings");
-const tomorrowContainer = document.getElementById("tomorrowMeetings");
-
-[todayContainer, tomorrowContainer].forEach(container => {
-    container.addEventListener('scroll', () => resetScrollTimer(container));
-    resetScrollTimer(container); // starta timer initialt
-});
-
-// PWA-installation
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'block';
-});
-installBtn.addEventListener('click', async () => {
-    installBtn.style.display='none';
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => deferredPrompt=null);
+scrollContainers.forEach(container => {
+    container.addEventListener("scroll", () => resetScrollTimer(container));
+    resetScrollTimer(container); // starta direkt
 });
 </script>
+
 </body>
 </html>
