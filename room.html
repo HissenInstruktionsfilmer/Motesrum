@@ -48,9 +48,9 @@ header { background:#bebfc2; text-align:center; padding:15px 0; font-size:1.8em;
 <script>
 /* --- Service Worker --- */
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('Service Worker registrerad'))
-        .catch(err => console.error('SW-fel:', err));
+    navigator.serviceWorker.register('sw.js').then(() => console.log('Service Worker registrerad'));
+}
+
 }
 
 /* --- PWA Install Prompt --- */
@@ -145,3 +145,4 @@ scrollContainers.forEach(container=>{
 
 </body>
 </html>
+
