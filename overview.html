@@ -223,7 +223,11 @@ async function updateOverview(){
 
 updateOverview();
 setInterval(updateOverview, 60 * 1000);
-setInterval(() => location.reload(true), 30 * 60 * 1000);
+setInterval(() => {
+  const url = new URL(window.location.href);
+  url.searchParams.set('t', Date.now());
+  window.location.href = url.toString();
+}, 30 * 60 * 1000);
 </script>
 
 </body>
