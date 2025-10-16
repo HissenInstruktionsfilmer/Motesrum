@@ -5,117 +5,26 @@
 <title>Mötesrum Status</title>
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: #f0f2f5;
-    font-family: "Segoe UI", Arial, sans-serif;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-{
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-}
-img, a {
-    -webkit-user-drag: none;
-}
-
-header {
-    background: #bebfc2;
-    text-align: center;
-    padding: 15px 0;
-    font-size: 1.8em;
-    font-weight: 600;
-    color: #222;
-    flex-shrink: 0;
-}
-
-#status {
-    font-size: 12em;
-    font-weight: 700;
-    text-align: center;
-    margin: 30px auto;
-    transition: color 0.3s;
-    flex-shrink: 0;
-}
-
-.ledigt { color: #28a745; }
-.upptaget { color: #dc3545; }
-
-.container {
-    display: flex;
-    justify-content: space-around;
-    margin: 20px;
-    gap: 20px;
-    flex: 1;
-    min-height: 0;
-    padding-bottom: 20px;
-    box-sizing: border-box;
-}
-
-.column {
-    flex: 1;
-    min-width: 0;
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    max-height: 100%;
-}
-
-.column h2 {
-    border-bottom: 2px solid #1a73e8;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-    font-size: 1.3em;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-#todayMeetings, #tomorrowMeetings {
-    flex: 1;
-    overflow-y: auto;
-    user-select: auto;
-    -webkit-user-select: auto;
-    touch-action: pan-y;
-}
-
-.meeting-card {
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-left: 5px solid #1a73e8;
-    background: #f8f9fa;
-    border-radius: 5px;
-}
-.meeting-card.ongoing {
-    border-left-color: #dc3545;
-    background: #ffe5e5;
-}
-
-.meeting-time { font-weight: 600; }
-.attendees { font-size: 0.85em; color: #555; margin-top: 4px; }
-
-.error {
-    text-align: center;
-    color: #dc3545;
-    font-size: 1.8em;
-    margin-top: 40px;
-}
-
-#installBtn {
-    display: none;
-}
+html, body { margin:0; padding:0; height:100%; background:#f0f2f5; font-family:"Segoe UI", Arial, sans-serif; color:#333; display:flex; flex-direction:column; overflow:hidden; }
+header { background:#bebfc2; text-align:center; padding:15px 0; font-size:1.8em; font-weight:600; color:#222; flex-shrink:0; }
+#status { font-size:12em; font-weight:700; text-align:center; margin:30px auto; transition: color 0.3s; flex-shrink:0; }
+.ledigt { color:#28a745; }
+.upptaget { color:#dc3545; }
+.container { display:flex; justify-content:space-around; margin:20px; gap:20px; flex:1; min-height:0; padding-bottom:20px; box-sizing:border-box; }
+.column { flex:1; min-width:0; background:white; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; max-height:100%; }
+.column h2 { border-bottom:2px solid #1a73e8; padding-bottom:8px; margin-bottom:12px; font-size:1.3em; font-weight:600; flex-shrink:0; }
+#todayMeetings, #tomorrowMeetings { flex:1; overflow-y:auto; user-select:auto; -webkit-user-select:auto; touch-action:pan-y; }
+.meeting-card { padding:8px 12px; margin-bottom:8px; border-left:5px solid #1a73e8; background:#f8f9fa; border-radius:5px; }
+.meeting-card.ongoing { border-left-color:#dc3545; background:#ffe5e5; }
+.meeting-time { font-weight:600; }
+.attendees { font-size:0.85em; color:#555; margin-top:4px; }
+.error { text-align:center; color:#dc3545; font-size:1.8em; margin-top:40px; }
+#installBtn { display:none; padding:10px 20px; margin:20px auto; font-size:1.2em; background:#1a73e8; color:white; border:none; border-radius:8px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -134,23 +43,45 @@ header {
     </div>
 </div>
 
+<button id="installBtn">Lägg till som webbapp</button>
+
 <script>
+/* --- Service Worker --- */
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(() => console.log('Service Worker registrerad'));
+    navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker registrerad'))
+        .catch(err => console.error('SW-fel:', err));
 }
 
+/* --- PWA Install Prompt --- */
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+});
+installBtn.addEventListener('click', () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+            installBtn.style.display = 'none';
+            deferredPrompt = null;
+        });
+    }
+});
+
+/* --- Room Data --- */
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
 
-async function fetchRoomData(roomEmail) {
-    try {
+async function fetchRoomData(roomEmail){
+    try{
         const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
         return await res.json();
-    } catch {
-        return { meetings: [], error: "Kunde inte kontakta API" };
-    }
+    } catch { return { meetings: [], error: "Kunde inte kontakta API" }; }
 }
 
-async function updateStatus() {
+async function updateStatus(){
     const urlParams = new URLSearchParams(window.location.search);
     const roomEmail = urlParams.get("room");
     const statusEl = document.getElementById("status");
@@ -158,74 +89,59 @@ async function updateStatus() {
     const tomorrowEl = document.getElementById("tomorrowMeetings");
     const headerEl = document.querySelector("header");
 
-    if (!roomEmail) {
-        statusEl.style.display = "none";
-        headerEl.textContent = "Ingen rumsadress angiven";
+    if(!roomEmail){
+        statusEl.style.display="none";
+        headerEl.textContent="Ingen rumsadress angiven";
         return;
     }
 
     const data = await fetchRoomData(roomEmail);
-    if (data.error) {
-        statusEl.style.display = "none";
-        todayEl.innerHTML = tomorrowEl.innerHTML = "";
-        headerEl.textContent = roomEmail;
+    if(data.error){
+        statusEl.style.display="none";
+        todayEl.innerHTML=tomorrowEl.innerHTML="";
+        headerEl.textContent=roomEmail;
         return;
     }
 
-    headerEl.textContent = data.displayName || roomEmail;
+    headerEl.textContent=data.displayName||roomEmail;
     const now = new Date();
-    const meetings = data.meetings || [];
-    const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
-    statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
-    statusEl.className = ongoing ? "upptaget" : "ledigt";
+    const meetings = data.meetings||[];
+    const ongoing = meetings.find(m => new Date(m.start.dateTime)<=now && now<=new Date(m.end.dateTime));
+    statusEl.textContent=ongoing?"Upptaget":"Ledigt";
+    statusEl.className=ongoing?"upptaget":"ledigt";
 
-    function renderMeetings(containerEl, meetingsArr) {
-        containerEl.innerHTML = "";
-        meetingsArr.forEach(m => {
-            const div = document.createElement("div");
-            div.className = "meeting-card" + (m === ongoing ? " ongoing" : "");
-            div.innerHTML = `
-                <div class="meeting-time">
-                    ${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - 
-                    ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}
-                </div>
-                <div>${m.subject}</div>
-                <div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name || "Okänd"}</div>
-            `;
+    function renderMeetings(containerEl, meetingsArr){
+        containerEl.innerHTML="";
+        meetingsArr.forEach(m=>{
+            const div=document.createElement("div");
+            div.className="meeting-card"+(m===ongoing?" ongoing":"");
+            div.innerHTML=`<div class="meeting-time">${new Date(m.start.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})} - ${new Date(m.end.dateTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})}</div><div>${m.subject}</div><div class="attendees">Bokad av: ${m.organizer?.emailAddress?.name||"Okänd"}</div>`;
             containerEl.appendChild(div);
         });
     }
 
     const today = now.toDateString();
-    const tomorrowDate = new Date(now);
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-
-    renderMeetings(todayEl, meetings.filter(m => new Date(m.start.dateTime).toDateString() === today));
-    renderMeetings(tomorrowEl, meetings.filter(m => new Date(m.start.dateTime).toDateString() === tomorrowDate.toDateString()));
+    const tomorrowDate = new Date(now); tomorrowDate.setDate(tomorrowDate.getDate()+1);
+    renderMeetings(todayEl, meetings.filter(m => new Date(m.start.dateTime).toDateString()===today));
+    renderMeetings(tomorrowEl, meetings.filter(m => new Date(m.start.dateTime).toDateString()===tomorrowDate.toDateString()));
 }
 
 updateStatus();
-setInterval(updateStatus, 60000);
-setInterval(() => location.reload(), 1000 * 60 * 30);
+setInterval(updateStatus,60000);
+setInterval(()=>location.reload(),1000*60*30);
 
-/* --- Scroll Reset efter 7 sek inaktivitet --- */
-const scrollContainers = [document.getElementById("todayMeetings"), document.getElementById("tomorrowMeetings")];
-const scrollTimers = new Map();
-
-function resetScrollTimer(container) {
-    if (scrollTimers.has(container)) clearTimeout(scrollTimers.get(container));
-    scrollTimers.set(container, setTimeout(() => {
-        container.scrollTo({ top: 0, behavior: "smooth" });
-    }, 7000));
+/* --- Scroll Reset --- */
+const scrollContainers=[document.getElementById("todayMeetings"),document.getElementById("tomorrowMeetings")];
+const scrollTimers=new Map();
+function resetScrollTimer(container){
+    if(scrollTimers.has(container)) clearTimeout(scrollTimers.get(container));
+    scrollTimers.set(container,setTimeout(()=>container.scrollTo({top:0,behavior:"smooth"}),30000));
 }
-
-scrollContainers.forEach(container => {
-    container.addEventListener("scroll", () => resetScrollTimer(container));
-    resetScrollTimer(container); // starta direkt
+scrollContainers.forEach(container=>{
+    container.addEventListener("scroll",()=>resetScrollTimer(container));
+    resetScrollTimer(container);
 });
 </script>
 
 </body>
 </html>
-
-
