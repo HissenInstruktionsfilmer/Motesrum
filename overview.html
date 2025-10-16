@@ -86,7 +86,13 @@ async function updateOverview(){
   });
   document.getElementById('lastUpdated').textContent=`Senast uppdaterad: ${new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
 }
-
+  
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Service Worker registrerad'))
+        .catch(err => console.error('Service Worker fel:', err));
+}
+  
 updateOverview();
 setInterval(updateOverview,60000);
 setInterval(()=>location.reload(true),30*60*1000);
