@@ -153,7 +153,6 @@ h1{
 <script>
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
 
-// Hårdkodade rum som ska visas i översikten
 const rooms = [
   'vastberga.mote1@hissen.se',
   'vastberga.mote2@hissen.se',
@@ -170,11 +169,9 @@ async function fetchStatus(roomEmail){
     const meetings = data.meetings || [];
     const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
     
-    // Filtrera möten som är **idag**
     const todayStr = now.toDateString();
     const todaysMeetings = meetings.filter(m => new Date(m.start.dateTime).toDateString() === todayStr);
     
-    // Hitta nästa möte **idag** som börjar efter nu
     const upcomingToday = todaysMeetings.find(m => new Date(m.start.dateTime) > now);
     
     return {
