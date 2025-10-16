@@ -3,99 +3,227 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Översikt – Mötesrum</title>
-<link rel="manifest" href="manifest.json">
+<title>Översikt – Västberga</title>
 
 <style>
 :root{
-  --bg:#f4f6f8; --text:#1f1f1f; --accent:#1a73e8;
-  --available-start:#27ae60; --available-end:#2ecc71;
-  --busy-start:#c0392b; --busy-end:#e74c3c;
-  --card-bg:#ffffff; --shadow:rgba(0,0,0,0.08);
+  --bg: #f4f6f8;
+  --text: #1f1f1f;
+  --accent: #1a73e8;
+  --available-start: #27ae60;
+  --available-end: #2ecc71;
+  --busy-start: #c0392b;
+  --busy-end: #e74c3c;
+  --card-bg: #ffffff;
+  --shadow: rgba(0,0,0,0.08);
 }
+
 *{box-sizing:border-box;}
-body{margin:0;padding:36px;font-family:"Segoe UI", Roboto, Arial,sans-serif;background:var(--bg);color:var(--text);overflow:auto;}
-h1{text-align:center;color:var(--accent);margin-bottom:28px;font-size:2.4rem;font-weight:700;}
-.container{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start;padding-bottom:12px;}
-.room-card{background:var(--card-bg);border-radius:16px;padding:22px;box-shadow:0 8px 26px var(--shadow);display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;transition: transform .22s cubic-bezier(.2,.9,.3,1), box-shadow .22s;min-height:160px;}
-.room-name{font-size:1.35rem;font-weight:700;color:var(--accent);margin-bottom:12px;}
-.status{display:inline-block;padding:10px 22px;font-weight:700;font-size:1.05rem;border-radius:999px;color:white;margin-bottom:10px;text-transform:uppercase;}
-.next-meeting{color:#555;font-size:0.95rem;margin-top:8px;min-height:36px;}
-.room-card.available{border-top:6px solid var(--available-start);}
-.room-card.busy{border-top:6px solid var(--busy-start);}
-.room-card.okand{border-top:6px solid #999;}
-.available .status{background:linear-gradient(135deg,var(--available-start),var(--available-end));}
-.busy .status{background:linear-gradient(135deg,var(--busy-start),var(--busy-end));}
-.okand .status{background:linear-gradient(135deg,#777,#aaa);}
-@keyframes pulse-change {0%{transform:scale(1);box-shadow:0 6px 18px rgba(0,0,0,0.08);}50%{transform:scale(1.03);box-shadow:0 12px 30px rgba(0,0,0,0.14);}100%{transform:scale(1);box-shadow:0 6px 18px rgba(0,0,0,0.08);}}
-.room-card.changed{animation:pulse-change 900ms ease;}
-.footer{position:fixed;left:36px;right:36px;bottom:18px;display:flex;justify-content:space-between;font-size:0.92rem;color:#666;pointer-events:none;}
-.footer .time{font-weight:600;color:#333;}
+body{
+  margin:0;
+  padding:36px;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow:hidden;
+}
+
+h1{
+  margin:0 0 28px 0;
+  text-align:center;
+  color:var(--accent);
+  font-size:2.4rem;
+  font-weight:700;
+  letter-spacing:0.3px;
+}
+
+.container{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap:24px;
+  align-items:start;
+  height: calc(100vh - 140px);
+  overflow:auto;
+  padding-bottom:12px;
+}
+
+.room-card{
+  background:var(--card-bg);
+  border-radius:16px;
+  padding:22px;
+  box-shadow: 0 8px 26px var(--shadow);
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  text-align:center;
+  transition: transform .22s cubic-bezier(.2,.9,.3,1), box-shadow .22s;
+  min-height:160px;
+}
+
+.room-name{
+  font-size:1.35rem;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:12px;
+}
+
+.status{
+  display:inline-block;
+  padding:10px 22px;
+  font-weight:700;
+  font-size:1.05rem;
+  border-radius:999px;
+  color:white;
+  letter-spacing:0.6px;
+  margin-bottom:10px;
+  text-transform:uppercase;
+}
+
+.next-meeting{
+  color:#555;
+  font-size:0.95rem;
+  margin-top:8px;
+  min-height:36px;
+}
+
+.room-card.available{
+  border-top:6px solid var(--available-start);
+}
+.room-card.busy{
+  border-top:6px solid var(--busy-start);
+}
+.room-card.okand{
+  border-top:6px solid #999;
+}
+
+.available .status{
+  background: linear-gradient(135deg, var(--available-start), var(--available-end));
+}
+.busy .status{
+  background: linear-gradient(135deg, var(--busy-start), var(--busy-end));
+}
+.okand .status{
+  background: linear-gradient(135deg, #777, #aaa);
+}
+
+@keyframes pulse-change {
+  0% { transform: scale(1); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+  50% { transform: scale(1.03); box-shadow: 0 12px 30px rgba(0,0,0,0.14); }
+  100% { transform: scale(1); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+}
+.room-card.changed {
+  animation: pulse-change 900ms ease;
+}
+
+.footer {
+  position: fixed;
+  left: 36px;
+  right: 36px;
+  bottom: 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:0.92rem;
+  color:#666;
+  pointer-events:none;
+}
+.footer .hint { opacity:0.9; }
+.footer .time { font-weight:600; color:#333; }
+
+@media (max-width:700px){
+  body{ padding:18px; overflow:auto; }
+  h1{ font-size:1.8rem; }
+  .container{ gap:16px; height:auto; }
+  .footer{ left:18px; right:18px; bottom:12px; }
+}
 </style>
 </head>
 <body>
 
-<h1>Översikt – Mötesrum</h1>
+<h1>Översikt – Västberga</h1>
 <div class="container" id="roomsContainer"></div>
-<div class="footer"><div class="time" id="lastUpdated">Senast uppdaterad: –</div></div>
+
+<div class="footer">
+  <div class="time" id="lastUpdated">Senast uppdaterad: –</div>
+</div>
 
 <script>
-const API_URL='https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
-const previousStatuses=new Map();
+const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
+
+// Hårdkodade rum som ska visas i översikten
+const rooms = [
+  'vastberga.mote1@hissen.se',
+  'vastberga.mote2@hissen.se'
+];
 
 async function fetchStatus(roomEmail){
-  try{
-    const res=await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
-    const data=await res.json();
-    if(data.error) return {displayName:roomEmail,status:'okänd',nextMeeting:null};
-    const now=new Date();
-    const meetings=data.meetings||[];
-    const ongoing=meetings.find(m=>new Date(m.start.dateTime)<=now&&now<=new Date(m.end.dateTime));
-    const upcoming=meetings.find(m=>new Date(m.start.dateTime)>now);
+  try {
+    const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
+    const data = await res.json();
+    if (data.error) return { displayName: roomEmail, status: 'okänd', nextMeeting: null };
+
+    const now = new Date();
+    const meetings = data.meetings || [];
+    const ongoing = meetings.find(m => new Date(m.start.dateTime) <= now && now <= new Date(m.end.dateTime));
+    const upcoming = meetings.find(m => new Date(m.start.dateTime) > now);
+
     return {
-      displayName:data.displayName||roomEmail,
-      status:ongoing?'upptaget':'ledigt',
-      nextMeeting:upcoming?`Nästa ${new Date(upcoming.start.dateTime).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})} — ${upcoming.subject}`:'Inga fler möten idag'
+      displayName: data.displayName || roomEmail,
+      status: ongoing ? 'upptaget' : 'ledigt',
+      nextMeeting: upcoming ? `Nästa ${new Date(upcoming.start.dateTime).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})} — ${upcoming.subject}` : 'Inga fler möten idag'
     };
-  }catch{ return {displayName:roomEmail,status:'okänd',nextMeeting:null}; }
+  } catch {
+    return { displayName: roomEmail, status: 'okänd', nextMeeting: null };
+  }
 }
 
-function escapeHtml(s){if(!s) return''; return String(s).replace(/[&<>"'`=/]/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;','/':'&#47;','=':'&#61;'})[ch]);}
-
 function createCard(info){
-  const card=document.createElement('div');
-  card.className=`room-card ${info.status==='upptaget'?'busy':info.status==='ledigt'?'available':'okand'}`;
-  card.innerHTML=`<div class="room-name">${escapeHtml(info.displayName)}</div><div class="status">${escapeHtml(info.status).toUpperCase()}</div><div class="next-meeting">${escapeHtml(info.nextMeeting||'')}</div>`;
+  const card = document.createElement('div');
+  card.className = `room-card ${info.status === 'upptaget' ? 'busy' : info.status === 'ledigt' ? 'available' : 'okand'}`;
+  card.innerHTML = `
+    <div class="room-name">${escapeHtml(info.displayName)}</div>
+    <div class="status">${escapeHtml(info.status).toUpperCase()}</div>
+    <div class="next-meeting">${escapeHtml(info.nextMeeting || '')}</div>
+  `;
   return card;
 }
 
+function escapeHtml(s){
+  if (!s) return '';
+  return String(s).replace(/[&<>"'`=/]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;','/':'&#47;','=':'&#61;'})[ch]);
+}
+
+const previousStatuses = new Map();
+
 async function updateOverview(){
-  const container=document.getElementById('roomsContainer');
-  container.innerHTML='';
-  const params=new URLSearchParams(window.location.search);
-  const roomsParam=params.get('rooms');
-  if(!roomsParam){ container.innerHTML='<div style="padding:20px;color:#666">Inga rum valda i URL (ex: ?rooms=vastberga.mote1@hissen.se,vastberga.mote2@hissen.se)</div>'; return;}
-  const rooms=roomsParam.split(',').map(r=>r.trim()).filter(Boolean);
-  const results=await Promise.all(rooms.map(r=>fetchStatus(r)));
-  results.forEach((info,idx)=>{
-    const prev=previousStatuses.get(rooms[idx]);
-    const card=createCard(info);
-    if(prev && prev!==info.status){card.classList.add('changed'); setTimeout(()=>card.classList.remove('changed'),1000);}
-    previousStatuses.set(rooms[idx],info.status);
+  const container = document.getElementById('roomsContainer');
+  container.innerHTML = '';
+
+  const promises = rooms.map(r => fetchStatus(r));
+  const results = await Promise.all(promises);
+
+  results.forEach((info, idx) => {
+    const prev = previousStatuses.get(rooms[idx]);
+    const card = createCard(info);
+    if (prev && prev !== info.status) {
+      card.classList.add('changed');
+      setTimeout(() => card.classList.remove('changed'), 1000);
+    }
+    previousStatuses.set(rooms[idx], info.status);
     container.appendChild(card);
   });
-  document.getElementById('lastUpdated').textContent=`Senast uppdaterad: ${new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    `Senast uppdaterad: ${now.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
 }
-  
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('Service Worker registrerad'))
-        .catch(err => console.error('Service Worker fel:', err));
-}
-  
+
 updateOverview();
-setInterval(updateOverview,60000);
-setInterval(()=>location.reload(true),30*60*1000);
+setInterval(updateOverview, 60 * 1000);
+setInterval(() => location.reload(true), 30 * 60 * 1000);
 </script>
 
 </body>
