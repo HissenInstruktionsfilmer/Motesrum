@@ -207,7 +207,11 @@ async function updateStatus() {
 
 updateStatus();
 setInterval(updateStatus, 60000);
-setInterval(() => location.reload(), 1000 * 60 * 30);
+setInterval(() => {
+  const url = new URL(window.location.href);
+  url.searchParams.set('t', Date.now());
+  window.location.href = url.toString();
+}, 30 * 60 * 1000);
 
 /* --- Scroll Reset efter 7 sek inaktivitet --- */
 const scrollContainers = [document.getElementById("todayMeetings"), document.getElementById("tomorrowMeetings")];
@@ -228,3 +232,4 @@ scrollContainers.forEach(container => {
 
 </body>
 </html>
+
