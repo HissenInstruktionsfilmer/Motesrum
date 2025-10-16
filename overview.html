@@ -39,7 +39,6 @@ h1{
   letter-spacing:0.3px;
 }
 
-/* Grid */
 .container{
   display:grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -50,7 +49,6 @@ h1{
   padding-bottom:12px;
 }
 
-/* Card */
 .room-card{
   background:var(--card-bg);
   border-radius:16px;
@@ -72,7 +70,6 @@ h1{
   margin-bottom:12px;
 }
 
-/* Status badge */
 .status{
   display:inline-block;
   padding:10px 22px;
@@ -85,7 +82,6 @@ h1{
   text-transform:uppercase;
 }
 
-/* Next meeting text */
 .next-meeting{
   color:#555;
   font-size:0.95rem;
@@ -93,7 +89,6 @@ h1{
   min-height:36px;
 }
 
-/* Top border to indicate status more starkly */
 .room-card.available{
   border-top:6px solid var(--available-start);
 }
@@ -104,7 +99,6 @@ h1{
   border-top:6px solid #999;
 }
 
-/* Gradient badges */
 .available .status{
   background: linear-gradient(135deg, var(--available-start), var(--available-end));
 }
@@ -115,7 +109,6 @@ h1{
   background: linear-gradient(135deg, #777, #aaa);
 }
 
-/* Changed animation when status flips */
 @keyframes pulse-change {
   0% { transform: scale(1); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
   50% { transform: scale(1.03); box-shadow: 0 12px 30px rgba(0,0,0,0.14); }
@@ -125,7 +118,6 @@ h1{
   animation: pulse-change 900ms ease;
 }
 
-/* Last updated footer */
 .footer {
   position: fixed;
   left: 36px;
@@ -141,7 +133,6 @@ h1{
 .footer .hint { opacity:0.9; }
 .footer .time { font-weight:600; color:#333; }
 
-/* Responsive adjustments */
 @media (max-width:700px){
   body{ padding:18px; overflow:auto; }
   h1{ font-size:1.8rem; }
@@ -163,7 +154,6 @@ h1{
 <script>
 const API_URL = 'https://nodejs-serverless-function-express-beta-dusky.vercel.app/api/roomStatus';
 
-// Hämta status för ett rum (använder oförändrad API-endpoint)
 async function fetchStatus(roomEmail){
   try {
     const res = await fetch(`${API_URL}?room=${encodeURIComponent(roomEmail)}`);
@@ -185,7 +175,6 @@ async function fetchStatus(roomEmail){
   }
 }
 
-// Håll koll på tidigare status för att markera förändringar
 const previousStatuses = new Map();
 
 function createCard(info){
@@ -199,13 +188,11 @@ function createCard(info){
   return card;
 }
 
-// Enkel HTML-escaping för namn/ämnen
 function escapeHtml(s){
   if (!s) return '';
   return String(s).replace(/[&<>"'`=/]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;','/':'&#47;','=':'&#61;'})[ch]);
 }
 
-// Uppdatera hela overview (hämtar listan från query-param)
 async function updateOverview(){
   const container = document.getElementById('roomsContainer');
   container.innerHTML = '';
@@ -218,36 +205,29 @@ async function updateOverview(){
 
   const rooms = roomsParam.split(',').map(r => r.trim()).filter(Boolean);
 
-  // Hämta i parallell men visa i ordning
   const promises = rooms.map(r => fetchStatus(r));
   const results = await Promise.all(promises);
 
   results.forEach((info, idx) => {
     const prev = previousStatuses.get(rooms[idx]);
     const card = createCard(info);
-    // Om status ändrats — lägg till "changed"-klass för animation
     if (prev && prev !== info.status) {
       card.classList.add('changed');
-      // Ta bort klassen efter animationen
       setTimeout(() => card.classList.remove('changed'), 1000);
     }
     previousStatuses.set(rooms[idx], info.status);
     container.appendChild(card);
   });
 
-  // Uppdatera "senast uppdaterad"
   const now = new Date();
   document.getElementById('lastUpdated').textContent =
     `Senast uppdaterad: ${now.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
 }
 
-// Kör direkt och sedan varje minut (live-uppdatering)
 updateOverview();
 const liveInterval = setInterval(updateOverview, 60 * 1000);
 
-// Full page reload var 30:e minut (säkerställer SW/manifest/URL och rensar ev. cache)
 const reloadInterval = setInterval(() => {
-  // Behåll query-param så att den återstartar på samma vy
   location.reload(true);
 }, 30 * 60 * 1000);
 </script>
