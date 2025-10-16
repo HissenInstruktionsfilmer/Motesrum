@@ -66,7 +66,7 @@ rooms.forEach(r => {
     container.appendChild(btn);
 });
 
-// Översiktsvy för alla rum
+// Översiktsvy
 function showOverview() {
     const overviewRooms = rooms.map(r => r.email);
     window.location.href = 'overview.html?rooms=' + encodeURIComponent(overviewRooms.join(','));
