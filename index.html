@@ -4,62 +4,41 @@
 <meta charset="UTF-8">
 <title>Välj Mötesrum</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
 <style>
-body {
-    font-family: "Segoe UI", sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    background: #f0f2f5;
-}
-h1 { margin-bottom: 20px; }
-button {
-    padding: 12px 20px;
-    margin: 10px;
-    font-size: 1.2em;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    background: #1a73e8;
-    color: white;
-    transition: background 0.3s;
-}
-button:hover { background: #1662c0; }
+body{font-family:"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0f2f5;}
+h1{margin-bottom:20px;}
+button{padding:12px 20px;margin:10px;font-size:1.2em;border-radius:8px;border:none;cursor:pointer;background:#1a73e8;color:white;transition:background 0.3s;}
+button:hover{background:#1662c0;}
 </style>
 </head>
 <body>
 
+<h1>Välj Mötesrum</h1>
 <div id="roomButtons"></div>
 <button onclick="showOverview()">Översikt - Västberga</button>
+<button id="installBtn">Lägg till som webbapp</button>
 
 <script>
-function showOverview() {
-    // Här kan du fördefiniera vilka rum som ska visas i översikten
-    const rooms = [
-        'vastberga.mote1@hissen.se',
-        'vastberga.mote2@hissen.se'
-    ];
-    window.location.href = 'overview.html?rooms=' + encodeURIComponent(rooms.join(','));
+/* --- PWA Install --- */
+let deferredPrompt;
+const installBtn=document.getElementById("installBtn");
+window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault();
+    deferredPrompt=e;
+    installBtn.style.display="block";
+});
+installBtn.addEventListener('click', ()=>{
+    if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(()=>{installBtn.style.display="none"; deferredPrompt=null;});
+    }
+});
+
+/* --- Service Worker --- */
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').then(()=>console.log('Service Worker registrerad')).catch(err=>console.error('SW-fel:',err));
 }
 
-// Skapa knappar för rumsval
-const rooms = [
-    { email: 'vastberga.mote1@hissen.se', name: 'Mötesrum 1 - Västberga' },
-    { email: 'vastberga.mote2@hissen.se', name: 'Mötesrum 2 - Västberga' },
-    { email: 'storakonferensrummet@hissen.se', name: 'Stora konferensrummet' }
-];
-
-const container = document.getElementById('roomButtons');
-rooms.forEach(r => {
-    const btn = document.createElement('button');
-    btn.textContent = r.name;
-    btn.onclick = () => window.location.href = `room.html?room=${encodeURIComponent(r.email)}`;
-    container.appendChild(btn);
-});
-</script>
-
-</body>
-</html>
+/* --- Rooms --- */
+const rooms=[{email:'vastberga.mote1@hissen.se',name:'Mötesrum 1 - Västberga'},{email:'vastberga.mote2@hissen.se',name:'Mötesrum 2 - Västberga'},{email:'storakonferensrummet
