@@ -38,12 +38,19 @@ header {
     color: #222;
     flex-shrink: 0;
 }
-
+    
+#bookingInfo {
+  text-align: center;
+  font-size: 1.5em;
+  color: #555;
+  margin-top: 10px;
+}
+    
 #status {
     font-size: 12em;
     font-weight: 700;
     text-align: center;
-    margin: 30px auto;
+    margin: 7px auto;
     transition: color 0.3s;
     flex-shrink: 0;
 }
@@ -121,6 +128,7 @@ header {
 <body>
 
 <header>Mötesrum</header>
+<div id="bookingInfo" aria-live="polite" style="text-align:center; margin-top:6px;"></div>
 <div id="status">Laddar...</div>
 
 <div class="container">
@@ -180,6 +188,14 @@ async function updateStatus() {
     statusEl.textContent = ongoing ? "Upptaget" : "Ledigt";
     statusEl.className = ongoing ? "upptaget" : "ledigt";
 
+    const bookingEl = document.getElementById('bookingInfo');
+    if (roomEmail) {
+    const readable = decodeURIComponent(roomEmail);
+    bookingEl.textContent = `Bokas via: ${readable}`;
+    } else {
+    bookingEl.textContent = '';
+    }
+    
     function renderMeetings(containerEl, meetingsArr) {
         containerEl.innerHTML = "";
         meetingsArr.forEach(m => {
@@ -231,5 +247,6 @@ scrollContainers.forEach(container => {
 
 </body>
 </html>
+
 
 
